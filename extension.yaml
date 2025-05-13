@@ -1,0 +1,16 @@
+﻿Id: Yagrin_SimpleSyncPlugin
+Name: Simple Sync
+Author: Yalgrin
+Version: 0.1.0
+Module: SimpleSyncPlugin.dll
+Type: GenericPlugin
+Icon: icon.png
+Links:
+  - Name: GitHub
+    Url: https://github.com/Yalgrin/playnite-simple-sync-plugin
+  - Name: Issue Tracker
+    Url: https://github.com/Yalgrin/playnite-simple-sync-plugin/issues
+  - Name: Server GitHub
+    Url: https://github.com/Yalgrin/playnite-simple-sync-server
+  - Name: Server Issue Tracker
+    Url: https://github.com/Yalgrin/playnite-simple-sync-server/issues

@@ -1,0 +1,55 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Settings_SynchronizationEnabled">Synchronization enabled</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Settings_SyncServerAddress">Sync server address</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Settings_TestConnection">Test</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Settings_SendLiveChanges">Send live changes</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Settings_FetchLiveChanges">Fetch live changes</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Settings_FetchChangesAtStartup">Fetch changes at startup</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Settings_Warning" xml:space="preserve">WARNING! READ ME FIRST!
+
+When first connecting to the sync server, it is recommended to keep the checkboxes above unchecked and manually do a full fetch and sync using the options in the main menu -> Extensions -> Simple Sync. You can enable the options above afterwards.
+
+When connecting additional Playnite instances to the server, it is recommended to start with an empty instance or with all files copied from the source machine. You can use an instance with an already populated library, however be warned that you might lose some extension data.
+
+Extension data is NOT synced across devices.
+
+You might also be asked to manually update default completion statuses in additional instances. Check notifications for when that's needed.</sys:String>
+
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_ObjectType_Category">Category</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_ObjectType_Genre">Genre</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_ObjectType_Platform">Platform</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_ObjectType_Company">Company</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_ObjectType_Feature">Feature</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_ObjectType_Tag">Tag</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_ObjectType_Series">Series</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_ObjectType_AgeRating">Age rating</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_ObjectType_Region">Region</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_ObjectType_Source">Source</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_ObjectType_CompletionStatus">Completion status</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_ObjectType_FilterPreset">Filter preset</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_ObjectType_Game">Game</sys:String>
+
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Menu_SyncAll">Synchronize everything</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Menu_SyncFilteredGames">Synchronize filtered games</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Menu_SyncSelectedGames">Synchronize selected games</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Menu_FetchAll">Fetch everything</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Menu_FetchFilteredGames">Fetch filtered games</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Menu_FetchSelectedGames">Fetch selected games</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Menu_FetchRemainingChanges">Fetch remaining changes</sys:String>
+
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Dialogs_Sync">Sending changes to the sync server...</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Dialogs_Fetch">Fetching changes from the sync server...</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_Label">Connection check</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Dialogs_TestConnection">Testing connection...</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_Ok">Connection successful!</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_Error">Connection failed!</sys:String>
+
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Error_UnexpectedError">SimpleSync - Unexpected error occurred!</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Error_HttpStatusError">SimpleSync - HTTP error {0} - {1}</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Error_HttpError">SimpleSync - HTTP error - {0}</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Error_ForceFetchRequired">SimpleSync - data mismatch found - perform a force check operation!</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Error_ItemCollectionSaveError">SimpleSync - Error while saving/removing items - {0}</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Error_ItemUpdateSaveError">SimpleSync - Error while updating items - {0}</sys:String>
+</ResourceDictionary>

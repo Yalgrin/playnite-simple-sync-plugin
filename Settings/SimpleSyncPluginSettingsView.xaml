@@ -1,0 +1,46 @@
+﻿<UserControl x:Class="SimpleSyncPlugin.SimpleSyncPluginSettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="400" d:DesignWidth="600">
+
+    <StackPanel Margin="20">
+        <CheckBox DockPanel.Dock="Top" Name="SynchronizationEnabled"
+                  IsChecked="{Binding Settings.SynchronizationEnabled}"
+                  Content="{DynamicResource LOC_Yalgrin_SimpleSync_Settings_SynchronizationEnabled}" />
+
+        <StackPanel DockPanel.Dock="Top" Margin="25,5,5,0"
+                    IsEnabled="{Binding IsChecked, ElementName=SynchronizationEnabled}">
+
+            <StackPanel Orientation="Horizontal"
+                        DockPanel.Dock="Top" Margin="0,15,5,0" HorizontalAlignment="Left">
+                <TextBlock Text="{DynamicResource LOC_Yalgrin_SimpleSync_Settings_SyncServerAddress}" MinWidth="150" />
+                <TextBox Text="{Binding Settings.SyncServerAddress}" MinWidth="350" />
+                <Button Content="{DynamicResource LOC_Yalgrin_SimpleSync_Settings_TestConnection}"
+                        Command="{Binding TestConnectionCommand}" />
+            </StackPanel>
+
+            <CheckBox DockPanel.Dock="Top" Name="SendLiveChanges"
+                      IsChecked="{Binding Settings.SendLiveChanges}"
+                      Margin="0,10,0,5"
+                      Content="{DynamicResource LOC_Yalgrin_SimpleSync_Settings_SendLiveChanges}" />
+
+            <CheckBox DockPanel.Dock="Top" Name="FetchLiveChanges"
+                      IsChecked="{Binding Settings.FetchLiveChanges}"
+                      Margin="0,10,0,5"
+                      Content="{DynamicResource LOC_Yalgrin_SimpleSync_Settings_FetchLiveChanges}" />
+
+            <CheckBox DockPanel.Dock="Top" Name="FetchChangesAtStartup"
+                      IsChecked="{Binding Settings.FetchChangesAtStartup}"
+                      Margin="0,10,0,5"
+                      Content="{DynamicResource LOC_Yalgrin_SimpleSync_Settings_FetchChangesAtStartup}" />
+        </StackPanel>
+
+        <Border BorderBrush="#fa9066" BorderThickness="2" CornerRadius="2" Margin="0, 20, 0, 0">
+            <TextBlock TextWrapping="Wrap" Margin="5"
+                       Text="{DynamicResource LOC_Yalgrin_SimpleSync_Settings_Warning}" />
+        </Border>
+    </StackPanel>
+</UserControl>

@@ -3,6 +3,6 @@ Packages:
   - Version: 0.1.0
     RequiredApiVersion: 6.11.0
     ReleaseDate: 2025-05-13
-    PackageUrl: TODO
+    PackageUrl: https://github.com/Yalgrin/playnite-simple-sync-plugin/releases/download/0.1.0/Yagrin_SimpleSyncPlugin_0_1_0.pext
     Changelog:
       - Initial release

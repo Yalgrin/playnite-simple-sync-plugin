@@ -6,3 +6,9 @@ Packages:
     PackageUrl: https://github.com/Yalgrin/playnite-simple-sync-plugin/releases/download/0.1.0/Yagrin_SimpleSyncPlugin_0_1_0.pext
     Changelog:
       - Initial release
+  - Version: 0.1.1
+    RequiredApiVersion: 6.11.0
+    ReleaseDate: 2025-06-17
+    PackageUrl: https://github.com/Yalgrin/playnite-simple-sync-plugin/releases/download/0.1.1/Yagrin_SimpleSyncPlugin_0_1_1.pext
+    Changelog:
+      - Removed synchronization of Include library integration play action toggle

@@ -77,7 +77,6 @@ namespace SimpleSyncPlugin.Services.Synchronizers
                                        || (oldData.SortingName != newData.SortingName)
                                        || (oldData.GameId != newData.GameId)
                                        || (oldData.PluginId != newData.PluginId)
-                                       || (oldData.IncludeLibraryPluginAction != newData.IncludeLibraryPluginAction)
                                        || (HaveItemsChanged(oldData.Platforms, newData.Platforms))
                                        || (HaveItemsChanged(oldData.Publishers, newData.Publishers))
                                        || (HaveItemsChanged(oldData.Developers, newData.Developers))

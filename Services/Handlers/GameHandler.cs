@@ -63,7 +63,6 @@ namespace SimpleSyncPlugin.Services.Handlers
                    || (entity.SortingName != objectDto.SortingName)
                    || (entity.GameId != objectDto.GameId)
                    || (entity.PluginId.ToString() != objectDto.PluginId)
-                   || (entity.IncludeLibraryPluginAction != objectDto.IncludeLibraryPluginAction)
                    || (HaveItemsChanged(entity.Platforms, objectDto.Platforms))
                    || (HaveItemsChanged(entity.Publishers, objectDto.Publishers))
                    || (HaveItemsChanged(entity.Developers, objectDto.Developers))

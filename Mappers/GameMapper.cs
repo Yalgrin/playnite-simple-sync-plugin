@@ -50,8 +50,6 @@ namespace SimpleSyncPlugin.Mappers
             entity.GameId = dto.GameId;
             entity.PluginId = new Guid(dto.PluginId);
 
-            entity.IncludeLibraryPluginAction = dto.IncludeLibraryPluginAction;
-
             if (entity.PlatformIds == null)
             {
                 entity.PlatformIds = new List<Guid>();
@@ -191,7 +189,6 @@ namespace SimpleSyncPlugin.Mappers
                 SortingName = entity.SortingName,
                 GameId = entity.GameId,
                 PluginId = entity.PluginId.ToString(),
-                IncludeLibraryPluginAction = entity.IncludeLibraryPluginAction,
                 Platforms = entity.Platforms?.Select(g => _platformMapper.ToDto(g)).ToList(),
                 Publishers = entity.Publishers?.Select(g => _companyMapper.ToDto(g)).ToList(),
                 Developers = entity.Developers?.Select(g => _companyMapper.ToDto(g)).ToList(),

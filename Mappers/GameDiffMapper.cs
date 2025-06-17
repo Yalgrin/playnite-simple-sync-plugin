@@ -94,11 +94,6 @@ namespace SimpleSyncPlugin.Mappers
                     entity.PluginId = new Guid(dto.PluginId);
                 }
 
-                if (changeFields.Contains("IncludeLibraryPluginAction"))
-                {
-                    entity.IncludeLibraryPluginAction = dto.IncludeLibraryPluginAction;
-                }
-
                 if (changeFields.Contains("Platforms"))
                 {
                     if (entity.PlatformIds == null)
@@ -388,12 +383,6 @@ namespace SimpleSyncPlugin.Mappers
             {
                 diffDto.PluginId = newGame.PluginId.ToString();
                 diffDto.ChangedFields.Add("PluginId");
-            }
-
-            if (oldGame.IncludeLibraryPluginAction != newGame.IncludeLibraryPluginAction)
-            {
-                diffDto.IncludeLibraryPluginAction = newGame.IncludeLibraryPluginAction;
-                diffDto.ChangedFields.Add("IncludeLibraryPluginAction");
             }
 
             if (HaveItemsChanged(oldGame.Platforms, newGame.Platforms))

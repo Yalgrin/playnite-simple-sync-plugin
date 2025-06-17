@@ -14,7 +14,6 @@ namespace SimpleSyncPlugin.Models
         public string SortingName { get; set; }
         public string GameId { get; set; }
         public string PluginId { get; set; }
-        public bool IncludeLibraryPluginAction { get; set; }
         public List<PlatformDto> Platforms { get; set; }
         public List<CompanyDto> Publishers { get; set; }
         public List<CompanyDto> Developers { get; set; }
@@ -56,7 +55,6 @@ namespace SimpleSyncPlugin.Models
         public string SortingName { get; set; }
         public string GameId { get; set; }
         public string PluginId { get; set; }
-        public bool IncludeLibraryPluginAction { get; set; }
         public List<PlatformDto> Platforms { get; set; }
         public List<CompanyDto> Publishers { get; set; }
         public List<CompanyDto> Developers { get; set; }

@@ -49,7 +49,7 @@ You might also be asked to manually update default completion statuses in additi
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_Error_UnexpectedError">SimpleSync - Unexpected error occurred!</sys:String>
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_Error_HttpStatusError">SimpleSync - HTTP error {0} - {1}</sys:String>
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_Error_HttpError">SimpleSync - HTTP error - {0}</sys:String>
-    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Error_ForceFetchRequired">SimpleSync - data mismatch found - perform a force check operation!</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Error_ForceFetchRequired">SimpleSync - data mismatch found - run a "Fetch everything" option from the main menu!</sys:String>
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_Error_ItemCollectionSaveError">SimpleSync - Error while saving/removing items - {0}</sys:String>
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_Error_ItemUpdateSaveError">SimpleSync - Error while updating items - {0}</sys:String>
 </ResourceDictionary>

@@ -29,6 +29,13 @@ Data NOT synchronized:
 - extensions
 - extension data
 
+## Planned features
+
+- Playnite 11 Alpha support
+- extension synchronization/migration
+- optional game install data synchronization
+- emulator and ROM support
+
 ## Setup
 
 ### Pre-requisites

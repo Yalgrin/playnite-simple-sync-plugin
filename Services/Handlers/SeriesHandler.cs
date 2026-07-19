@@ -56,7 +56,7 @@ namespace SimpleSyncPlugin.Services.Handlers
             return db.Series;
         }
 
-        protected override Task<SeriesDto> GetObject(ChangeDto dto)
+        protected override Task<SeriesDto> GetObject(ChangeMessage dto)
         {
             return _syncBackendService.SyncBackendClient.GetSeries(dto.ObjectId);
         }

@@ -3,6 +3,7 @@
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_Settings_SynchronizationEnabled">Synchronization enabled</sys:String>
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_Settings_SyncServerAddress">Sync server address</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Settings_Register">Register</sys:String>
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_Settings_TestConnection">Test</sys:String>
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_Settings_SendLiveChanges">Send live changes</sys:String>
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_Settings_FetchLiveChanges">Fetch live changes</sys:String>

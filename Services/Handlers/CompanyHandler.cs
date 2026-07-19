@@ -83,7 +83,7 @@ namespace SimpleSyncPlugin.Services.Handlers
             return db.Companies;
         }
 
-        protected override Task<CompanyDto> GetObject(ChangeDto dto)
+        protected override Task<CompanyDto> GetObject(ChangeMessage dto)
         {
             return _syncBackendService.SyncBackendClient.GetCompany(dto.ObjectId);
         }

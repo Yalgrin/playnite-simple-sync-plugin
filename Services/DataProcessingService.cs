@@ -60,28 +60,20 @@ namespace SimpleSyncPlugin.Services
             return _changeHandlerList.ToDictionary(handler => handler.GetHandledType());
         }
 
-        public async Task ProcessChange(ChangeDto dto)
+        public async Task ProcessChange(ChangeMessage dto)
         {
             try
             {
-                if (dto.ForceFetch || dto.ClientId != _syncBackendService.ClientId.ToString())
+                _changeHandlers.TryGetValue(dto.Type, out var handler);
+                if (handler != null)
                 {
-                    _changeHandlers.TryGetValue(dto.Type, out var handler);
-                    if (handler != null)
-                    {
-                        Logger.Trace(
-                            $"Trying to process change with ID = {dto.Id} of type {dto.Type} and base object id {dto.ObjectId} (force fetch: {dto.ForceFetch})...");
-                        await handler.HandleChange(dto);
-                    }
-                    else
-                    {
-                        Logger.Warn($"No handler found type {dto.Type}!");
-                    }
+                    Logger.Trace(
+                        $"Trying to process change with ID = {dto.Id} of type {dto.Type} and base object id {dto.ObjectId} (force fetch: {dto.ForceFetch})...");
+                    await handler.HandleChange(dto);
                 }
                 else
                 {
-                    Logger.Trace(
-                        $"Skipping processing of message ID = {dto.Id} of type {dto.Type} and base object id {dto.ObjectId}, it's from the current client...");
+                    Logger.Warn($"No handler found type {dto.Type}!");
                 }
 
                 _settings.UpdateLastProcessedId(dto.Id);
@@ -167,7 +159,7 @@ namespace SimpleSyncPlugin.Services
             {
                 Logger.Info("FetchRemainingChanges > START");
 
-                List<ChangeDto> changeDtos =
+                List<ChangeMessage> changeDtos =
                     await _syncBackendService.SyncBackendClient.FetchRemainingChanges(_settings.Settings
                         .LastProcessedId);
 

@@ -56,7 +56,7 @@ namespace SimpleSyncPlugin.Services.Handlers
             return db.Platforms;
         }
 
-        protected override Task<PlatformDiffDto> GetObject(ChangeDto dto)
+        protected override Task<PlatformDiffDto> GetObject(ChangeMessage dto)
         {
             return _syncBackendService.SyncBackendClient.GetPlatformDiff(dto.ObjectId);
         }

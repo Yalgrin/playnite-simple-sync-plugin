@@ -66,7 +66,7 @@ namespace SimpleSyncPlugin.Services.Handlers
             return db.CompletionStatuses;
         }
 
-        protected override Task<CompletionStatusDto> GetObject(ChangeDto dto)
+        protected override Task<CompletionStatusDto> GetObject(ChangeMessage dto)
         {
             return _syncBackendService.SyncBackendClient.GetCompletionStatus(dto.ObjectId);
         }

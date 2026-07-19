@@ -27,7 +27,7 @@ namespace SimpleSyncPlugin.Services.Handlers
             return db.FilterPresets;
         }
 
-        protected override Task<FilterPresetDto> GetObject(ChangeDto dto)
+        protected override Task<FilterPresetDto> GetObject(ChangeMessage dto)
         {
             return _syncBackendService.SyncBackendClient.GetFilterPreset(dto.ObjectId);
         }

@@ -26,7 +26,7 @@ namespace SimpleSyncPlugin.Services.Handlers
             _dataSynchronizationService = dataSynchronizationService;
         }
 
-        public async Task HandleChange(ChangeDto dto)
+        public async Task HandleChange(ChangeMessage dto)
         {
             var objectDto = await GetObject(dto);
             if (objectDto == null)
@@ -243,7 +243,7 @@ namespace SimpleSyncPlugin.Services.Handlers
 
         protected abstract IItemCollection<TEntity> GetDatabaseCollection(IGameDatabaseAPI db);
 
-        protected abstract Task<TDto> GetObject(ChangeDto dto);
+        protected abstract Task<TDto> GetObject(ChangeMessage dto);
 
         public abstract ObjectType GetHandledType();
     }

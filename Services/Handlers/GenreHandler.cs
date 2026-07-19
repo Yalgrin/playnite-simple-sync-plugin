@@ -56,7 +56,7 @@ namespace SimpleSyncPlugin.Services.Handlers
             return db.Genres;
         }
 
-        protected override Task<GenreDto> GetObject(ChangeDto dto)
+        protected override Task<GenreDto> GetObject(ChangeMessage dto)
         {
             return _syncBackendService.SyncBackendClient.GetGenre(dto.ObjectId);
         }

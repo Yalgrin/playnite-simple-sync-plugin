@@ -56,7 +56,7 @@ namespace SimpleSyncPlugin.Services.Handlers
             return db.Features;
         }
 
-        protected override Task<FeatureDto> GetObject(ChangeDto dto)
+        protected override Task<FeatureDto> GetObject(ChangeMessage dto)
         {
             return _syncBackendService.SyncBackendClient.GetFeature(dto.ObjectId);
         }

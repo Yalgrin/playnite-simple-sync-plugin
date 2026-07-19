@@ -56,7 +56,7 @@ namespace SimpleSyncPlugin.Services.Handlers
             return db.AgeRatings;
         }
 
-        protected override Task<AgeRatingDto> GetObject(ChangeDto dto)
+        protected override Task<AgeRatingDto> GetObject(ChangeMessage dto)
         {
             return _syncBackendService.SyncBackendClient.GetAgeRating(dto.ObjectId);
         }

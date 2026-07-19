@@ -12,6 +12,7 @@
         <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
         <FileAlignment>512</FileAlignment>
         <Deterministic>true</Deterministic>
+        <ToolboxExe>$(TOOLBOX_P10_EXE)</ToolboxExe>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
         <DebugSymbols>true</DebugSymbols>
@@ -31,6 +32,7 @@
         <WarningLevel>4</WarningLevel>
     </PropertyGroup>
     <ItemGroup>
+        <Reference Include="mscorlib"/>
         <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
             <HintPath>packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
         </Reference>
@@ -41,6 +43,10 @@
         <Reference Include="PresentationFramework"/>
         <Reference Include="System"/>
         <Reference Include="System.Core"/>
+        <Reference Include="System.Runtime.Serialization"/>
+        <Reference Include="System.Runtime.Serialization.Primitives, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+            <HintPath>packages\System.Runtime.Serialization.Primitives.4.3.0\lib\net46\System.Runtime.Serialization.Primitives.dll</HintPath>
+        </Reference>
         <Reference Include="System.Xaml"/>
         <Reference Include="System.Xml.Linq"/>
         <Reference Include="System.Data.DataSetExtensions"/>
@@ -73,7 +79,8 @@
         <Compile Include="Models\AbstractDto.cs"/>
         <Compile Include="Models\AgeRatingDto.cs"/>
         <Compile Include="Models\CategoryDto.cs"/>
-        <Compile Include="Models\ChangeDto.cs"/>
+        <Compile Include="Models\ChangeMessage.cs"/>
+        <Compile Include="Models\ClientModels.cs"/>
         <Compile Include="Models\CompanyDto.cs"/>
         <Compile Include="Models\CompletionStatusDto.cs"/>
         <Compile Include="Models\ErrorDto.cs"/>
@@ -131,8 +138,9 @@
         </Compile>
         <Compile Include="SimpleSyncPlugin.cs"/>
         <Compile Include="Properties\AssemblyInfo.cs"/>
-        <Compile Include="Threading\DataFetchThread.cs"/>
+        <Compile Include="Threading\ServerConnectionThread.cs"/>
         <Compile Include="Threading\DataProcessingThread.cs"/>
+        <Compile Include="Threading\SessionManager.cs"/>
     </ItemGroup>
     <ItemGroup>
         <None Include="extension.yaml">
@@ -164,4 +172,21 @@
         <Content Include="README.md"/>
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
+
+    <Target Name="CleanOldPackedPlugins" BeforeTargets="BeforeClean">
+        <RemoveDir Directories="packed"/>
+    </Target>
+
+    <Target Name="PackPlugin" AfterTargets="AfterBuild">
+        <Warning
+                Condition="'$(ToolboxExe)' == ''"
+                Text="Skipping plugin packaging because the TOOLBOX_P10_EXE environment variable is not set."/>
+        <Warning
+                Condition="'$(ToolboxExe)' != '' and !Exists('$(ToolboxExe)')"
+                Text="Skipping plugin packaging because TOOLBOX_P10_EXE points to a missing file: $(ToolboxExe)"/>
+        <Exec
+                Condition="'$(ToolboxExe)' != '' and Exists('$(ToolboxExe)')"
+                Command='"$(ToolboxExe)" pack "$([System.String]::Copy($(OutDir)).TrimEnd(`\`))" "$(ProjectDir)\packed\"'
+                WorkingDirectory="$(ProjectDir)"/>
+    </Target>
 </Project>

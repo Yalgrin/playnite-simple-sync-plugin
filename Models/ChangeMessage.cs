@@ -1,12 +1,14 @@
-﻿namespace SimpleSyncPlugin.Models
+﻿using Newtonsoft.Json;
+
+namespace SimpleSyncPlugin.Models
 {
-    public class ChangeDto
+    public class ChangeMessage
     {
-        public long? Id { get; set; }
-        public ObjectType Type { get; set; }
-        public string ClientId { get; set; }
-        public long ObjectId { get; set; }
-        public bool ForceFetch { get; set; }
+        [JsonProperty("id")] public long? Id { get; set; }
+        [JsonProperty("type")] public ObjectType Type { get; set; }
+        [JsonProperty("clientId")] public string ClientId { get; set; }
+        [JsonProperty("objectId")] public long ObjectId { get; set; }
+        [JsonProperty("forceFetch")] public bool ForceFetch { get; set; }
     }
 
     public enum ObjectType

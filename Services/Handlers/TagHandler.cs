@@ -56,7 +56,7 @@ namespace SimpleSyncPlugin.Services.Handlers
             return db.Tags;
         }
 
-        protected override Task<TagDto> GetObject(ChangeDto dto)
+        protected override Task<TagDto> GetObject(ChangeMessage dto)
         {
             return _syncBackendService.SyncBackendClient.GetTag(dto.ObjectId);
         }

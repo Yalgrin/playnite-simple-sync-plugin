@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using SimpleSyncPlugin.Exceptions;
 using SimpleSyncPlugin.Mappers;
 using SimpleSyncPlugin.Settings;
+using SimpleSyncPlugin.Threading;
 
 namespace SimpleSyncPlugin.Services
 {
@@ -13,7 +15,7 @@ namespace SimpleSyncPlugin.Services
         private static readonly ILogger Logger = LogManager.GetLogger();
 
         private readonly SimpleSyncPluginSettingsViewModel _settingsViewModel;
-        private readonly object _lock = new object();
+        private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
 
         private readonly CategoryMapper _categoryMapper;
         private readonly GenreMapper _genreMapper;
@@ -32,7 +34,6 @@ namespace SimpleSyncPlugin.Services
         private readonly GameDiffMapper _gameDiffMapper;
 
         public SyncBackendClient SyncBackendClient { get; private set; }
-        public Guid ClientId { get; private set; }
 
         public SyncBackendService(IPlayniteAPI api, SimpleSyncPluginSettingsViewModel settingsViewModel)
         {
@@ -55,34 +56,70 @@ namespace SimpleSyncPlugin.Services
             _gameDiffMapper = new GameDiffMapper(api);
 
             var settings = _settingsViewModel.Settings;
-            lock (_lock)
+            _lock.Wait();
+            try
             {
-                if (settings.SynchronizationEnabled && settings.SyncServerAddress != null)
+                if (settings.SynchronizationEnabled && settings.SyncServerAddress != null &&
+                    !string.IsNullOrEmpty(_settingsViewModel.ClientInfo.ClientId))
                 {
-                    ClientId = Guid.NewGuid();
-                    SyncBackendClient = new SyncBackendClient(api, settings.SyncServerAddress, ClientId);
+                    var clientInfo = _settingsViewModel.ClientInfo.Clone();
+                    SyncBackendClient = new SyncBackendClient(api, settings.SyncServerAddress, clientInfo);
                     Logger.Info(
-                        $"Prepared a sync client with address {settings.SyncServerAddress} and client id {ClientId}");
+                        $"Prepared a sync client with address {settings.SyncServerAddress} and client id {clientInfo.ClientId}");
                 }
             }
-
-            _settingsViewModel.PropertyChanged += (sender, args) =>
+            finally
             {
-                lock (_lock)
+                _lock.Release();
+            }
+
+            _settingsViewModel.PropertyChanged += async (sender, args) =>
+            {
+                await _lock.WaitAsync();
+                try
                 {
                     var simpleSyncPluginSettings = _settingsViewModel.Settings;
+                    var registeredClientInfo = _settingsViewModel.ClientInfo;
                     if (simpleSyncPluginSettings.SynchronizationEnabled &&
-                        simpleSyncPluginSettings.SyncServerAddress != null)
+                        simpleSyncPluginSettings.SyncServerAddress != null &&
+                        !string.IsNullOrEmpty(registeredClientInfo.ClientId))
                     {
                         if (SyncBackendClient == null || simpleSyncPluginSettings.SyncServerAddress !=
-                            SyncBackendClient.ServerAddress)
+                            SyncBackendClient.ServerAddress ||
+                            registeredClientInfo.ClientId != SyncBackendClient.ClientInfo.ClientId
+                            || registeredClientInfo.ClientToken != SyncBackendClient.ClientInfo.ClientToken)
                         {
                             SyncBackendClient?.Shutdown();
-                            ClientId = Guid.NewGuid();
+                            var clientInfo = registeredClientInfo.Clone();
                             SyncBackendClient = new SyncBackendClient(api, simpleSyncPluginSettings.SyncServerAddress,
-                                ClientId);
+                                clientInfo);
                             Logger.Info(
-                                $"Prepared a sync client with address {settings.SyncServerAddress} and client id {ClientId}");
+                                $"Prepared a sync client with address {settings.SyncServerAddress} and client id {clientInfo.ClientId}");
+                        }
+                        else
+                        {
+                            try
+                            {
+                                if (SessionManager.CurrentSession == null)
+                                {
+                                    return;
+                                }
+
+                                if (_settingsViewModel.Settings.FetchLiveChanges)
+                                {
+                                    Logger.Info("Enabling change stream from settings change");
+                                    await (SyncBackendClient?.EnableChangeStream() ?? Task.CompletedTask);
+                                }
+                                else
+                                {
+                                    Logger.Info("Disabling change stream from settings change");
+                                    await (SyncBackendClient?.DisableChangeStream() ?? Task.CompletedTask);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger.Error(ex, "Error while enabling/disabling change stream");
+                            }
                         }
                     }
                     else
@@ -91,6 +128,41 @@ namespace SimpleSyncPlugin.Services
                         SyncBackendClient = null;
                         Logger.Info("Cleared the sync client");
                     }
+                }
+                finally
+                {
+                    _lock.Release();
+                }
+            };
+
+            SessionManager.CurrentSessionChanged += async (sender, args) =>
+            {
+                await _lock.WaitAsync();
+                try
+                {
+                    if (SessionManager.CurrentSession == null)
+                    {
+                        return;
+                    }
+
+                    if (_settingsViewModel.Settings.FetchLiveChanges)
+                    {
+                        Logger.Info("Enabling change stream from session change");
+                        await (SyncBackendClient?.EnableChangeStream() ?? Task.CompletedTask);
+                    }
+                    else
+                    {
+                        Logger.Info("Disabling change stream from session change");
+                        await (SyncBackendClient?.DisableChangeStream() ?? Task.CompletedTask);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, "Error while enabling/disabling change stream");
+                }
+                finally
+                {
+                    _lock.Release();
                 }
             };
         }

@@ -1,9 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
 using System.Windows.Input;
 using Playnite.SDK;
 using Playnite.SDK.Data;
+using SimpleSyncPlugin.Models;
 using SimpleSyncPlugin.Services;
+using SimpleSyncPlugin.Threading;
 
 namespace SimpleSyncPlugin.Settings
 {
@@ -53,6 +57,41 @@ namespace SimpleSyncPlugin.Settings
         }
     }
 
+    public class RegisteredClientInfo : ObservableObject
+    {
+        private string _clientId = "";
+        private string _clientName = "";
+        private string _clientToken = "";
+
+        public string ClientId
+        {
+            get => _clientId;
+            set => SetValue(ref _clientId, value);
+        }
+
+        public string ClientName
+        {
+            get => _clientName;
+            set => SetValue(ref _clientName, value);
+        }
+
+        public string ClientToken
+        {
+            get => _clientToken;
+            set => SetValue(ref _clientToken, value);
+        }
+
+        public RegisteredClientInfo Clone()
+        {
+            return new RegisteredClientInfo()
+            {
+                _clientId = _clientId,
+                _clientName = _clientName,
+                _clientToken = _clientToken
+            };
+        }
+    }
+
     public class SimpleSyncPluginSettingsViewModel : ObservableObject, ISettings
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
@@ -60,6 +99,8 @@ namespace SimpleSyncPlugin.Settings
         private SimpleSyncPluginSettings EditingClone { get; set; }
 
         private SimpleSyncPluginSettings _settings;
+        private RegisteredClientInfo _clientInfo;
+        private string _statusMessage;
 
         public SimpleSyncPluginSettings Settings
         {
@@ -71,7 +112,25 @@ namespace SimpleSyncPlugin.Settings
             }
         }
 
+        public RegisteredClientInfo ClientInfo
+        {
+            get => _clientInfo;
+            set
+            {
+                _clientInfo = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public string StatusMessage
+        {
+            get => _statusMessage;
+            private set => SetValue(ref _statusMessage, value);
+        }
+
         public ICommand TestConnectionCommand { get; private set; }
+        public ICommand RegisterCommand { get; private set; }
+
 
         public SimpleSyncPluginSettingsViewModel(SimpleSyncPlugin plugin)
         {
@@ -80,7 +139,69 @@ namespace SimpleSyncPlugin.Settings
             var savedSettings = plugin.LoadPluginSettings<SimpleSyncPluginSettings>();
 
             Settings = savedSettings ?? new SimpleSyncPluginSettings();
+            ClientInfo = LoadAuthInfo() ?? new RegisteredClientInfo();
+            RegisterCommand = new RelayCommand(async () =>
+            {
+                try
+                {
+                    await ExecuteRegisterCommand();
+                }
+                catch (Exception e)
+                {
+                    Logger.Error(e, "Exception while registering!");
+                }
+            });
             TestConnectionCommand = new RelayCommand(ExecuteTestConnectionCommand);
+
+            SessionManager.CurrentSessionChanged += (sender, args) => { UpdateStatusMessage(); };
+
+            UpdateStatusMessage();
+        }
+
+        private void UpdateStatusMessage()
+        {
+            string msg = "";
+            if (string.IsNullOrEmpty(ClientInfo.ClientId))
+            {
+                msg = "Not registered. ";
+            }
+            else
+            {
+                msg = $"Registered as: {ClientInfo.ClientName}. ";
+            }
+
+            if (SessionManager.CurrentSession?.SessionId != null)
+            {
+                msg += "Session active.";
+            }
+            else
+            {
+                msg += "No session active.";
+            }
+
+            StatusMessage = msg;
+        }
+
+        private RegisteredClientInfo LoadAuthInfo()
+        {
+            var userDataPath = _plugin.GetPluginUserDataPath();
+            var authInfoPath = Path.Combine(userDataPath, "AuthInfo.json");
+            return File.Exists(authInfoPath) ? Serialization.FromJsonFile<RegisteredClientInfo>(authInfoPath) : null;
+        }
+
+        private void SaveAuthInfo(RegisteredClientInfo clientInfo)
+        {
+            var userDataPath = _plugin.GetPluginUserDataPath();
+            var authInfoPath = Path.Combine(userDataPath, "AuthInfo.json");
+            if (!Directory.Exists(userDataPath))
+            {
+                Directory.CreateDirectory(userDataPath);
+            }
+
+            var strConf = Serialization.ToJson(clientInfo, true);
+            File.WriteAllText(authInfoPath, strConf);
+            ClientInfo = clientInfo;
+            UpdateStatusMessage();
         }
 
         public void BeginEdit()
@@ -116,36 +237,64 @@ namespace SimpleSyncPlugin.Settings
             }
         }
 
+        private async Task ExecuteRegisterCommand()
+        {
+            var api = _plugin.PlayniteApi;
+            //TODO
+            var result = api.Dialogs.SelectString("LOC_Yalgrin_SimpleSync_Dialogs_Register_EnterName",
+                "LOC_Yalgrin_SimpleSync_Dialogs_Register_Caption", Environment.MachineName);
+            if (!result.Result)
+            {
+                return;
+            }
+
+            var stringResult = result.SelectedString;
+            if (!string.IsNullOrEmpty(stringResult))
+            {
+                var client = new SyncBackendClient(api, Settings.SyncServerAddress, null);
+                try
+                {
+                    var clientDto = await client.RegisterClient(new RegistrationRequestDto()
+                        { DisplayName = stringResult });
+                    SaveAuthInfo(new RegisteredClientInfo
+                    {
+                        ClientId = clientDto.ClientId,
+                        ClientName = clientDto.DisplayName,
+                        ClientToken = clientDto.ClientToken
+                    });
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, $"Failed to register client {stringResult}.");
+                    api.Dialogs.ShowErrorMessage("LOC_Yalgrin_SimpleSync_Dialogs_Register_Error", ex.Message);
+                }
+            }
+        }
+
 
         private void ExecuteTestConnectionCommand()
         {
+            //TODO
             Logger.Info($"Testing connection to server {Settings.SyncServerAddress}...");
             var api = _plugin.PlayniteApi;
-            bool connectionOk = false;
+            CheckResult? checkResult = null;
             api.Dialogs.ActivateGlobalProgress(async args =>
                 {
                     try
                     {
-                        var result = await new SyncBackendClient(api, Settings.SyncServerAddress, Guid.Empty)
-                            .TestConnection();
-                        if (result == "OK")
-                        {
-                            connectionOk = true;
-                        }
-                        else
-                        {
-                            connectionOk = false;
-                        }
+                        var result = await new SyncBackendClient(api, Settings.SyncServerAddress, ClientInfo)
+                            .CheckConnection();
+                        checkResult = result?.Result;
                     }
                     catch (Exception ex)
                     {
                         Logger.Error(ex, "Exception while checking connection!");
-                        connectionOk = false;
+                        checkResult = null;
                     }
                 },
                 new GlobalProgressOptions("LOC_Yalgrin_SimpleSync_Dialogs_TestConnection", true)
                     { IsIndeterminate = true });
-            if (connectionOk)
+            if (checkResult != null && checkResult == CheckResult.Ok)
             {
                 api.Dialogs.ShowMessage("LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_Ok",
                     "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_Label");

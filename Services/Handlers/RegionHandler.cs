@@ -56,7 +56,7 @@ namespace SimpleSyncPlugin.Services.Handlers
             return db.Regions;
         }
 
-        protected override Task<RegionDto> GetObject(ChangeDto dto)
+        protected override Task<RegionDto> GetObject(ChangeMessage dto)
         {
             return _syncBackendService.SyncBackendClient.GetRegion(dto.ObjectId);
         }

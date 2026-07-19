@@ -4,12 +4,15 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Playnite.SDK;
 using SimpleSyncPlugin.Exceptions;
 using SimpleSyncPlugin.Extensions;
 using SimpleSyncPlugin.Models;
+using SimpleSyncPlugin.Settings;
+using SimpleSyncPlugin.Threading;
 
 namespace SimpleSyncPlugin.Services
 {
@@ -21,18 +24,24 @@ namespace SimpleSyncPlugin.Services
         private const string HttpErrorId = "Yalgrin-SimpleSyncPlugin-HttpError";
         private const string ForceFetchRequiredId = "Yalgrin-SimpleSyncPlugin-ForceFetchRequired";
 
+        private const int SupportedApiVersion = 1;
+
         private readonly IPlayniteAPI _api;
         private readonly HttpClient _httpClient;
         private readonly HttpClient _longTimeoutHttpClient;
-        private readonly Guid _clientId;
+        private readonly CancellationTokenSource _shutdownCts;
+        private readonly List<Stream> _heldStreams = new List<Stream>();
 
         public string ServerAddress { get; private set; }
+        public RegisteredClientInfo ClientInfo { get; private set; }
         public bool ShouldShutdown { get; private set; }
+        public CancellationToken ShutdownToken => _shutdownCts.Token;
 
-        public SyncBackendClient(IPlayniteAPI api, string serverAddress, Guid clientId)
+        public SyncBackendClient(IPlayniteAPI api, string serverAddress, RegisteredClientInfo clientInfo)
         {
             _api = api;
             ServerAddress = serverAddress;
+            ClientInfo = clientInfo;
             var baseAddress = new Uri(serverAddress);
 
             _httpClient = new HttpClient
@@ -40,18 +49,51 @@ namespace SimpleSyncPlugin.Services
                 BaseAddress = baseAddress,
                 Timeout = TimeSpan.FromSeconds(20)
             };
+
             _longTimeoutHttpClient = new HttpClient
             {
                 BaseAddress = baseAddress,
                 Timeout = TimeSpan.FromMinutes(60)
             };
-            _clientId = clientId;
+
+            if (clientInfo != null)
+            {
+                _httpClient.DefaultRequestHeaders.Add("X-Client-Id", clientInfo.ClientId);
+                _httpClient.DefaultRequestHeaders.Add("X-Client-Token", clientInfo.ClientToken);
+                _longTimeoutHttpClient.DefaultRequestHeaders.Add("X-Client-Id", clientInfo.ClientId);
+                _longTimeoutHttpClient.DefaultRequestHeaders.Add("X-Client-Token", clientInfo.ClientToken);
+            }
+
+            _shutdownCts = new CancellationTokenSource();
             ShouldShutdown = false;
         }
 
-        public Task<string> TestConnection()
+        public Task<RegisteredClientDto> RegisterClient(RegistrationRequestDto requestDto)
         {
-            return FetchStringUsingGetRequest("/api/health");
+            Logger.Debug(
+                $"Registering client {requestDto.DisplayName} with supported API version {requestDto.SupportedApiVersion}...");
+            return SendPostRequestWithResult<RegistrationRequestDto, RegisteredClientDto>("/api/client/register",
+                new RegistrationRequestDto
+                {
+                    DisplayName = requestDto.DisplayName,
+                    SupportedApiVersion = SupportedApiVersion
+                });
+        }
+
+        public Task<CheckResultDto> CheckConnection()
+        {
+            return SendPostRequestWithResult<CheckRequestDto, CheckResultDto>("/api/client/check",
+                new CheckRequestDto { SupportedApiVersion = SupportedApiVersion });
+        }
+
+        public Task EnableChangeStream()
+        {
+            return SendPostRequest("/api/client/enable-change-stream");
+        }
+
+        public Task DisableChangeStream()
+        {
+            return SendPostRequest("/api/client/enable-change-stream");
         }
 
         public Task<CategoryDto> GetCategory(long id)
@@ -279,12 +321,31 @@ namespace SimpleSyncPlugin.Services
             return DeleteObject(dto, "game");
         }
 
-        public async Task<Stream> GetStream(long lastProcessedId)
+        public async Task<Stream> GetStream(long lastProcessedId, CancellationToken cancellationToken = default)
         {
             try
             {
-                return await _longTimeoutHttpClient.GetStreamAsync(
-                    $"/api/change/stream?lastChangeId={lastProcessedId}");
+                var request = new HttpRequestMessage(HttpMethod.Post,
+                    $"/api/client/connect?lastChangeId={lastProcessedId}");
+                var sessionId = SessionManager.CurrentSession?.SessionId;
+                if (sessionId != null)
+                {
+                    request.Headers.Add("X-Session-Id", sessionId);
+                }
+
+                var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_shutdownCts.Token, cancellationToken);
+                CancellationToken mergedToken = linkedCts.Token;
+                var response =
+                    await _longTimeoutHttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead,
+                        mergedToken);
+                response.EnsureSuccessStatusCode();
+                var stream = await response.Content.ReadAsStreamAsync();
+                lock (_heldStreams)
+                {
+                    _heldStreams.Add(stream);
+                }
+
+                return stream;
             }
             catch (HttpStatusException ex)
             {
@@ -311,11 +372,11 @@ namespace SimpleSyncPlugin.Services
             }
         }
 
-        public async Task<List<ChangeDto>> FetchAll()
+        public async Task<List<ChangeMessage>> FetchAll()
         {
             try
             {
-                return await FetchObjectUsingGetRequest<List<ChangeDto>>("/api/change/all");
+                return await FetchObjectUsingGetRequest<List<ChangeMessage>>("/api/change/all");
             }
             catch (HttpStatusException ex)
             {
@@ -342,11 +403,12 @@ namespace SimpleSyncPlugin.Services
             }
         }
 
-        public async Task<List<ChangeDto>> FetchRemainingChanges(long lastProcessedId)
+        public async Task<List<ChangeMessage>> FetchRemainingChanges(long lastProcessedId)
         {
             try
             {
-                return await FetchObjectUsingGetRequest<List<ChangeDto>>($"/api/change?lastChangeId={lastProcessedId}");
+                return await FetchObjectUsingGetRequest<List<ChangeMessage>>(
+                    $"/api/change?lastChangeId={lastProcessedId}");
             }
             catch (HttpStatusException ex)
             {
@@ -373,11 +435,11 @@ namespace SimpleSyncPlugin.Services
             }
         }
 
-        public async Task<List<ChangeDto>> FetchGames(GameChangeRequestDto dto)
+        public async Task<List<ChangeMessage>> FetchGames(GameChangeRequestDto dto)
         {
             try
             {
-                return await SendPostRequestWithResult<GameChangeRequestDto, List<ChangeDto>>($"/api/change/games",
+                return await SendPostRequestWithResult<GameChangeRequestDto, List<ChangeMessage>>($"/api/change/games",
                     dto);
             }
             catch (HttpStatusException ex)
@@ -469,7 +531,14 @@ namespace SimpleSyncPlugin.Services
 
         private async Task<Tuple<byte[], string>> FetchMetadataUsingGetMethod(string uri)
         {
-            var response = await _httpClient.GetAsync(uri);
+            var request = new HttpRequestMessage(HttpMethod.Get, uri);
+            var sessionId = SessionManager.CurrentSession?.SessionId;
+            if (sessionId != null)
+            {
+                request.Headers.Add("X-Session-Id", sessionId);
+            }
+
+            var response = await _httpClient.SendAsync(request);
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
                 return null;
@@ -495,7 +564,7 @@ namespace SimpleSyncPlugin.Services
         {
             try
             {
-                await SendPostRequest($"/api/{objectPath}/save?clientId={_clientId}", entity);
+                await SendPostRequest($"/api/{objectPath}/save", entity);
             }
             catch (ForceFetchRequiredException ex)
             {
@@ -539,7 +608,7 @@ namespace SimpleSyncPlugin.Services
                 AddFileToMultipartRequest(content, icon, "Icon");
                 AddFileToMultipartRequest(content, coverImage, "CoverImage");
                 AddFileToMultipartRequest(content, backgroundImage, "BackgroundImage");
-                await DoSendPostRequest($"/api/{objectPath}/save?clientId={_clientId}", content);
+                await DoSendPostRequest($"/api/{objectPath}/save", content);
             }
             catch (ForceFetchRequiredException ex)
             {
@@ -604,7 +673,7 @@ namespace SimpleSyncPlugin.Services
                 AddMetadataToDiffMultipartRequest(content, dto, icon, "Icon");
                 AddMetadataToDiffMultipartRequest(content, dto, coverImage, "CoverImage");
                 AddMetadataToDiffMultipartRequest(content, dto, backgroundImage, "BackgroundImage");
-                await DoSendPostRequest($"/api/{objectPath}/save?clientId={_clientId}", content);
+                await DoSendPostRequest($"/api/{objectPath}/save", content);
             }
             catch (ManualSynchronizationRequiredException ex)
             {
@@ -668,7 +737,7 @@ namespace SimpleSyncPlugin.Services
         {
             try
             {
-                await SendPostRequest($"/api/{objectPath}/delete?clientId={_clientId}", dto);
+                await SendPostRequest($"/api/{objectPath}/delete", dto);
             }
             catch (HttpStatusException ex)
             {
@@ -697,7 +766,14 @@ namespace SimpleSyncPlugin.Services
 
         private async Task<T> FetchObjectUsingGetRequest<T>(string uri) where T : class
         {
-            var response = await _httpClient.GetAsync(uri);
+            var request = new HttpRequestMessage(HttpMethod.Get, uri);
+            var sessionId = SessionManager.CurrentSession?.SessionId;
+            if (sessionId != null)
+            {
+                request.Headers.Add("X-Session-Id", sessionId);
+            }
+
+            var response = await _httpClient.SendAsync(request);
             var result = await response.Content.ReadAsStringAsync();
             if (response.IsSuccessStatusCode)
             {
@@ -710,7 +786,14 @@ namespace SimpleSyncPlugin.Services
 
         private async Task<string> FetchStringUsingGetRequest(string uri)
         {
-            var response = await _httpClient.GetAsync(uri);
+            var request = new HttpRequestMessage(HttpMethod.Get, uri);
+            var sessionId = SessionManager.CurrentSession?.SessionId;
+            if (sessionId != null)
+            {
+                request.Headers.Add("X-Session-Id", sessionId);
+            }
+
+            var response = await _httpClient.SendAsync(request);
             var result = await response.Content.ReadAsStringAsync();
             if (response.IsSuccessStatusCode)
             {
@@ -719,6 +802,11 @@ namespace SimpleSyncPlugin.Services
 
             await TryToExtractError(response);
             return null;
+        }
+
+        private Task SendPostRequest(string uri)
+        {
+            return DoSendPostRequest(uri, null);
         }
 
         private Task SendPostRequest<T>(string uri, T bodyObject) where T : class
@@ -733,7 +821,19 @@ namespace SimpleSyncPlugin.Services
 
         private async Task DoSendPostRequest(string uri, HttpContent content)
         {
-            var response = await _httpClient.PostAsync(uri, content);
+            var request = new HttpRequestMessage(HttpMethod.Post, uri);
+            var sessionId = SessionManager.CurrentSession?.SessionId;
+            if (sessionId != null)
+            {
+                request.Headers.Add("X-Session-Id", sessionId);
+            }
+
+            if (content != null)
+            {
+                request.Content = content;
+            }
+
+            var response = await _httpClient.SendAsync(request);
             if (response.IsSuccessStatusCode)
             {
                 return;
@@ -744,7 +844,15 @@ namespace SimpleSyncPlugin.Services
 
         private async Task<T> DoSendPostRequestWithResult<T>(string uri, HttpContent content) where T : class
         {
-            var response = await _httpClient.PostAsync(uri, content);
+            var request = new HttpRequestMessage(HttpMethod.Post, uri);
+            var sessionId = SessionManager.CurrentSession?.SessionId;
+            if (sessionId != null)
+            {
+                request.Headers.Add("X-Session-Id", sessionId);
+            }
+
+            request.Content = content;
+            var response = await _httpClient.SendAsync(request);
             var result = await response.Content.ReadAsStringAsync();
             if (response.IsSuccessStatusCode)
             {
@@ -810,7 +918,29 @@ namespace SimpleSyncPlugin.Services
         public void Shutdown()
         {
             Logger.Trace("Requesting client shutdown...");
+
             ShouldShutdown = true;
+
+            var cts = _shutdownCts;
+            if (cts != null && !cts.IsCancellationRequested)
+            {
+                cts.Cancel();
+            }
+
+            lock (_heldStreams)
+            {
+                foreach (var stream in _heldStreams)
+                {
+                    try
+                    {
+                        stream.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex, $"Failed to dispose stream!");
+                    }
+                }
+            }
         }
     }
 }

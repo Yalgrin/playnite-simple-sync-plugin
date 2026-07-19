@@ -11,7 +11,7 @@ namespace SimpleSyncPlugin.Threading
     public class DataProcessingThread
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
-        private readonly ConcurrentQueue<ChangeDto> _changes = new ConcurrentQueue<ChangeDto>();
+        private readonly ConcurrentQueue<ChangeMessage> _changes = new ConcurrentQueue<ChangeMessage>();
         private readonly object _notifyingLock = new object();
         private readonly object _modificationLock = new object();
         private readonly DataProcessingService _service;
@@ -80,7 +80,7 @@ namespace SimpleSyncPlugin.Threading
             Logger.Trace("Released lock for processing!");
         }
 
-        public void SubmitChange(ChangeDto change)
+        public void SubmitChange(ChangeMessage change)
         {
             _changes.Enqueue(change);
             lock (_notifyingLock)

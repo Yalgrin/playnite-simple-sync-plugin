@@ -3,8 +3,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:settings="clr-namespace:SimpleSyncPlugin.Settings"
              mc:Ignorable="d"
-             d:DesignHeight="400" d:DesignWidth="600">
+             d:DesignHeight="400" d:DesignWidth="600"
+             d:DataContext="{d:DesignInstance settings:SimpleSyncPluginSettingsViewModel}">
 
     <StackPanel Margin="20">
         <CheckBox DockPanel.Dock="Top" Name="SynchronizationEnabled"
@@ -18,6 +20,13 @@
                         DockPanel.Dock="Top" Margin="0,15,5,0" HorizontalAlignment="Left">
                 <TextBlock Text="{DynamicResource LOC_Yalgrin_SimpleSync_Settings_SyncServerAddress}" MinWidth="150" />
                 <TextBox Text="{Binding Settings.SyncServerAddress}" MinWidth="350" />
+                <TextBlock Text="{Binding StatusMessage}" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal"
+                        DockPanel.Dock="Top" Margin="0,15,5,0" HorizontalAlignment="Left">
+                <Button Content="{DynamicResource LOC_Yalgrin_SimpleSync_Settings_Register}"
+                        Command="{Binding RegisterCommand}" />
                 <Button Content="{DynamicResource LOC_Yalgrin_SimpleSync_Settings_TestConnection}"
                         Command="{Binding TestConnectionCommand}" />
             </StackPanel>

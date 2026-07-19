@@ -56,7 +56,7 @@ namespace SimpleSyncPlugin.Services.Handlers
             return db.Categories;
         }
 
-        protected override Task<CategoryDto> GetObject(ChangeDto dto)
+        protected override Task<CategoryDto> GetObject(ChangeMessage dto)
         {
             return _syncBackendService.SyncBackendClient.GetCategory(dto.ObjectId);
         }

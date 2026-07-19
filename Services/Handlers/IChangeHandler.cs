@@ -5,7 +5,7 @@ namespace SimpleSyncPlugin.Services.Handlers
 {
     public interface IChangeHandler
     {
-        Task HandleChange(ChangeDto dto);
+        Task HandleChange(ChangeMessage dto);
 
         ObjectType GetHandledType();
     }

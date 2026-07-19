@@ -18,7 +18,7 @@ namespace SimpleSyncPlugin
 
         private SimpleSyncPluginSettingsViewModel Settings { get; }
         private DataProcessingThread DataProcessingThread { get; set; }
-        private DataFetchThread DataFetchThread { get; set; }
+        private ServerConnectionThread ServerConnectionThread { get; set; }
         private SyncBackendService SyncBackendService { get; }
         private DataProcessingService DataProcessingService { get; }
         private DataSynchronizationService DataSynchronizationService { get; }
@@ -55,8 +55,8 @@ namespace SimpleSyncPlugin
             Logger.Info("Starting processing and fetch threads...");
             DataProcessingThread = new DataProcessingThread(DataProcessingService);
             DataProcessingThread.Start();
-            DataFetchThread = new DataFetchThread(DataProcessingThread, SyncBackendService, Settings);
-            DataFetchThread.Start();
+            ServerConnectionThread = new ServerConnectionThread(DataProcessingThread, SyncBackendService, Settings);
+            ServerConnectionThread.Start();
         }
 
 
@@ -76,7 +76,7 @@ namespace SimpleSyncPlugin
         public override void OnApplicationStopped(OnApplicationStoppedEventArgs args)
         {
             DataProcessingThread?.Shutdown();
-            DataFetchThread?.Shutdown();
+            ServerConnectionThread?.Shutdown();
         }
 
         public override IEnumerable<MainMenuItem> GetMainMenuItems(GetMainMenuItemsArgs args)

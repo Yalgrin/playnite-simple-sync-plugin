@@ -33,7 +33,7 @@ namespace SimpleSyncPlugin.Services.Handlers
             return db.Games;
         }
 
-        protected override Task<GameDto> GetObject(ChangeDto dto)
+        protected override Task<GameDto> GetObject(ChangeMessage dto)
         {
             return _syncBackendService.SyncBackendClient.GetGame(dto.ObjectId);
         }

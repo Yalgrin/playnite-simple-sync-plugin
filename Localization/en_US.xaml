@@ -3,6 +3,7 @@
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_Settings_SynchronizationEnabled">Synchronization enabled</sys:String>
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_Settings_SyncServerAddress">Sync server address</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Settings_Status">Status</sys:String>
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_Settings_Register">Register</sys:String>
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_Settings_TestConnection">Test</sys:String>
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_Settings_SendLiveChanges">Send live changes</sys:String>
@@ -40,12 +41,16 @@ You might also be asked to manually update default completion statuses in additi
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_Menu_FetchSelectedGames">Fetch selected games</sys:String>
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_Menu_FetchRemainingChanges">Fetch remaining changes</sys:String>
 
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Dialogs_CheckConnection">Checking connection to the sync server...</sys:String>
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_Dialogs_Sync">Sending changes to the sync server...</sys:String>
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_Dialogs_Fetch">Fetching changes from the sync server...</sys:String>
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_Label">Connection check</sys:String>
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_Dialogs_TestConnection">Testing connection...</sys:String>
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_Ok">Connection successful!</sys:String>
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_Error">Connection failed!</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_OutdatedClient">You're running an outdated version of the plugin! The plugin will now disable itself. Make sure to update the plugin, restart the application and re-enable the plugin.</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_OutdatedServer">You're running an outdated version of the server! The plugin will now disable itself. Make sure to update the plugin, restart the application and re-enable the plugin.</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_UnableToReachServer">Unable to reach the server! The plugin will now disable itself. Make sure to verify if valid version of the server is running, check the plugin configuration, restart the application and re-enable the plugin.</sys:String>
 
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_Error_UnexpectedError">SimpleSync - Unexpected error occurred!</sys:String>
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_Error_HttpStatusError">SimpleSync - HTTP error {0} - {1}</sys:String>

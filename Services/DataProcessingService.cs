@@ -88,7 +88,7 @@ namespace SimpleSyncPlugin.Services
         public async Task FetchAll(GlobalProgressActionArgs progArgs)
         {
             Logger.Info("FetchAll > START");
-            var changeDtos = await _syncBackendService.SyncBackendClient.FetchAll();
+            var changeDtos = await _syncBackendService.FetchAll();
             var changeCount = changeDtos.Count;
             Logger.Info($"FetchAll > found {changeCount} changes");
 
@@ -160,7 +160,7 @@ namespace SimpleSyncPlugin.Services
                 Logger.Info("FetchRemainingChanges > START");
 
                 List<ChangeMessage> changeDtos =
-                    await _syncBackendService.SyncBackendClient.FetchRemainingChanges(_settings.Settings
+                    await _syncBackendService.FetchRemainingChanges(_settings.Settings
                         .LastProcessedId);
 
                 Logger.Info($"FetchRemainingChanges > found {changeDtos.Count} changes to process!");

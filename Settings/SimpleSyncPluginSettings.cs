@@ -105,7 +105,7 @@ namespace SimpleSyncPlugin.Settings
         public SimpleSyncPluginSettings Settings
         {
             get => _settings;
-            set
+            private set
             {
                 _settings = value;
                 OnPropertyChanged();
@@ -115,7 +115,7 @@ namespace SimpleSyncPlugin.Settings
         public RegisteredClientInfo ClientInfo
         {
             get => _clientInfo;
-            set
+            private set
             {
                 _clientInfo = value;
                 OnPropertyChanged();
@@ -226,6 +226,14 @@ namespace SimpleSyncPlugin.Settings
             return true;
         }
 
+        public void MarkAsDisabled()
+        {
+            Logger.Debug("Disabling the synchronization...");
+            BeginEdit();
+            Settings.SynchronizationEnabled = false;
+            EndEdit();
+        }
+
         public void UpdateLastProcessedId(long? id)
         {
             if (id != null && id > Settings.LastProcessedId)
@@ -254,7 +262,7 @@ namespace SimpleSyncPlugin.Settings
                 var client = new SyncBackendClient(api, Settings.SyncServerAddress, null);
                 try
                 {
-                    var clientDto = await client.RegisterClient(new RegistrationRequestDto()
+                    var clientDto = await client.RegisterClient(new RegistrationRequestDto
                         { DisplayName = stringResult });
                     SaveAuthInfo(new RegisteredClientInfo
                     {

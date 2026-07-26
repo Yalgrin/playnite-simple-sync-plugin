@@ -11,6 +11,16 @@ namespace SimpleSyncPlugin.Exceptions
     {
     }
 
+    public class AuthException : Exception
+    {
+        public string StatusCode { get; private set; }
+
+        public AuthException(string statusCode) : base(statusCode)
+        {
+            StatusCode = statusCode;
+        }
+    }
+
     public class HttpStatusException : Exception
     {
         public HttpStatusCode StatusCode { get; private set; }

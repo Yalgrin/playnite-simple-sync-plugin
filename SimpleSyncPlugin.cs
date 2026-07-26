@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Controls;
 using Playnite.SDK;
 using Playnite.SDK.Events;
@@ -43,22 +44,74 @@ namespace SimpleSyncPlugin
 
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
         {
-            if (Settings.Settings.FetchChangesAtStartup)
+            CheckConnection();
+            if (Settings.Settings.SynchronizationEnabled && Settings.Settings.FetchChangesAtStartup)
             {
                 ActivateProgressBag("LOC_Yalgrin_SimpleSync_Dialogs_Fetch",
                     progArgs =>
                     {
-                        FetchWithLocks(() => DataProcessingService.FetchRemainingChanges(progArgs).Wait());
+                        FetchWithLocks(() =>
+                            DataProcessingService.FetchRemainingChanges(progArgs).GetAwaiter().GetResult());
                     });
             }
 
             Logger.Info("Starting processing and fetch threads...");
             DataProcessingThread = new DataProcessingThread(DataProcessingService);
             DataProcessingThread.Start();
-            ServerConnectionThread = new ServerConnectionThread(DataProcessingThread, SyncBackendService, Settings);
+            ServerConnectionThread =
+                new ServerConnectionThread(DataProcessingThread, SyncBackendService, Settings, PlayniteApi);
             ServerConnectionThread.Start();
         }
 
+        private void CheckConnection()
+        {
+            //TODO handle different exceptions differently
+            ActivateProgressBag("LOC_Yalgrin_SimpleSync_Dialogs_CheckConnection",
+                progArgs =>
+                {
+                    try
+                    {
+                        //TODO remove
+                        Task.Delay(2000).GetAwaiter().GetResult();
+                        var checkResultDto = SyncBackendService.CheckConnection().GetAwaiter().GetResult();
+                        if (checkResultDto != null)
+                        {
+                            Logger.Info($"Connection check successful, result {checkResultDto.Result}!");
+                            switch (checkResultDto.Result)
+                            {
+                                case CheckResult.OutdatedClient:
+                                    PlayniteApi.Dialogs.ShowErrorMessage(
+                                        "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_OutdatedClient",
+                                        "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_Error");
+                                    Settings.MarkAsDisabled();
+                                    break;
+                                case CheckResult.OutdatedServer:
+                                    PlayniteApi.Dialogs.ShowErrorMessage(
+                                        "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_OutdatedServer",
+                                        "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_Error");
+                                    Settings.MarkAsDisabled();
+                                    break;
+                                case CheckResult.Ok:
+                                    Logger.Info("Connection test successful!");
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            Logger.Warn("No result returned. Is the sync server configured?");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex, "Exception while checking the connection!");
+
+                        PlayniteApi.Dialogs.ShowErrorMessage(
+                            "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_UnableToReachServer",
+                            "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_Error");
+                        Settings.MarkAsDisabled();
+                    }
+                });
+        }
 
         private void FetchWithLocks(Action action)
         {

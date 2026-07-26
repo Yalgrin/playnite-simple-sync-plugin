@@ -1,10 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using SimpleSyncPlugin.Exceptions;
+using SimpleSyncPlugin.Extensions;
 using SimpleSyncPlugin.Mappers;
+using SimpleSyncPlugin.Models;
 using SimpleSyncPlugin.Settings;
 using SimpleSyncPlugin.Threading;
 
@@ -16,6 +20,11 @@ namespace SimpleSyncPlugin.Services
 
         private readonly SimpleSyncPluginSettingsViewModel _settingsViewModel;
         private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
+
+        //TODO constants
+        private const string ClientErrorId = "Yalgrin-SimpleSyncPlugin-ClientError";
+        private const string HttpErrorId = "Yalgrin-SimpleSyncPlugin-HttpError";
+        private const string ForceFetchRequiredId = "Yalgrin-SimpleSyncPlugin-ForceFetchRequired";
 
         private readonly CategoryMapper _categoryMapper;
         private readonly GenreMapper _genreMapper;
@@ -32,6 +41,7 @@ namespace SimpleSyncPlugin.Services
         private readonly FilterPresetMapper _filterPresetMapper;
         private readonly GameMapper _gameMapper;
         private readonly GameDiffMapper _gameDiffMapper;
+        private readonly IPlayniteAPI _api;
 
         public SyncBackendClient SyncBackendClient { get; private set; }
 
@@ -54,6 +64,7 @@ namespace SimpleSyncPlugin.Services
             _filterPresetMapper = new FilterPresetMapper();
             _gameMapper = new GameMapper(api);
             _gameDiffMapper = new GameDiffMapper(api);
+            _api = api;
 
             var settings = _settingsViewModel.Settings;
             _lock.Wait();
@@ -167,12 +178,22 @@ namespace SimpleSyncPlugin.Services
             };
         }
 
+        public Task<CheckResultDto> CheckConnection()
+        {
+            if (SyncBackendClient == null)
+            {
+                return Task.FromResult<CheckResultDto>(null);
+            }
+
+            return HandleRequest(SyncBackendClient.CheckConnection());
+        }
+
         public async Task SaveCategory(Category category)
         {
             var dto = _categoryMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await SyncBackendClient.SaveCategory(dto);
+                await HandleRequest(SyncBackendClient.SaveCategory(dto));
             }
         }
 
@@ -181,7 +202,7 @@ namespace SimpleSyncPlugin.Services
             var dto = _categoryMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await SyncBackendClient.DeleteCategory(dto);
+                await HandleRequest(SyncBackendClient.DeleteCategory(dto));
             }
         }
 
@@ -190,7 +211,7 @@ namespace SimpleSyncPlugin.Services
             var dto = _genreMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await SyncBackendClient.SaveGenre(dto);
+                await HandleRequest(SyncBackendClient.SaveGenre(dto));
             }
         }
 
@@ -199,7 +220,7 @@ namespace SimpleSyncPlugin.Services
             var dto = _genreMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await SyncBackendClient.DeleteGenre(dto);
+                await HandleRequest(SyncBackendClient.DeleteGenre(dto));
             }
         }
 
@@ -208,7 +229,8 @@ namespace SimpleSyncPlugin.Services
             var dto = _platformMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await SyncBackendClient.SavePlatform(dto, category.Icon, category.Cover, category.Background);
+                await HandleRequest(SyncBackendClient.SavePlatform(dto, category.Icon, category.Cover,
+                    category.Background));
             }
         }
 
@@ -219,13 +241,13 @@ namespace SimpleSyncPlugin.Services
             {
                 try
                 {
-                    await SyncBackendClient.SavePlatformDiff(dto, newEntity.Icon, newEntity.Cover,
-                        newEntity.Background);
+                    await HandleRequest(SyncBackendClient.SavePlatformDiff(dto, newEntity.Icon, newEntity.Cover,
+                        newEntity.Background));
                 }
                 catch (ManualSynchronizationRequiredException ex)
                 {
                     Logger.Error(ex, "ManualSynchronizationRequiredException");
-                    await SavePlatform(newEntity);
+                    await HandleRequest(SavePlatform(newEntity));
                 }
             }
         }
@@ -235,7 +257,7 @@ namespace SimpleSyncPlugin.Services
             var dto = _platformMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await SyncBackendClient.DeletePlatform(dto);
+                await HandleRequest(SyncBackendClient.DeletePlatform(dto));
             }
         }
 
@@ -244,7 +266,7 @@ namespace SimpleSyncPlugin.Services
             var dto = _companyMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await SyncBackendClient.SaveCompany(dto);
+                await HandleRequest(SyncBackendClient.SaveCompany(dto));
             }
         }
 
@@ -253,7 +275,7 @@ namespace SimpleSyncPlugin.Services
             var dto = _companyMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await SyncBackendClient.DeleteCompany(dto);
+                await HandleRequest(SyncBackendClient.DeleteCompany(dto));
             }
         }
 
@@ -262,7 +284,7 @@ namespace SimpleSyncPlugin.Services
             var dto = _featureMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await SyncBackendClient.SaveFeature(dto);
+                await HandleRequest(SyncBackendClient.SaveFeature(dto));
             }
         }
 
@@ -271,7 +293,7 @@ namespace SimpleSyncPlugin.Services
             var dto = _featureMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await SyncBackendClient.DeleteFeature(dto);
+                await HandleRequest(SyncBackendClient.DeleteFeature(dto));
             }
         }
 
@@ -280,7 +302,7 @@ namespace SimpleSyncPlugin.Services
             var dto = _tagMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await SyncBackendClient.SaveTag(dto);
+                await HandleRequest(SyncBackendClient.SaveTag(dto));
             }
         }
 
@@ -289,7 +311,7 @@ namespace SimpleSyncPlugin.Services
             var dto = _tagMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await SyncBackendClient.DeleteTag(dto);
+                await HandleRequest(SyncBackendClient.DeleteTag(dto));
             }
         }
 
@@ -298,7 +320,7 @@ namespace SimpleSyncPlugin.Services
             var dto = _seriesMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await SyncBackendClient.SaveSeries(dto);
+                await HandleRequest(SyncBackendClient.SaveSeries(dto));
             }
         }
 
@@ -307,7 +329,7 @@ namespace SimpleSyncPlugin.Services
             var dto = _seriesMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await SyncBackendClient.DeleteSeries(dto);
+                await HandleRequest(SyncBackendClient.DeleteSeries(dto));
             }
         }
 
@@ -316,7 +338,7 @@ namespace SimpleSyncPlugin.Services
             var dto = _ageRatingMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await SyncBackendClient.SaveAgeRating(dto);
+                await HandleRequest(SyncBackendClient.SaveAgeRating(dto));
             }
         }
 
@@ -325,7 +347,7 @@ namespace SimpleSyncPlugin.Services
             var dto = _ageRatingMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await SyncBackendClient.DeleteAgeRating(dto);
+                await HandleRequest(SyncBackendClient.DeleteAgeRating(dto));
             }
         }
 
@@ -334,7 +356,7 @@ namespace SimpleSyncPlugin.Services
             var dto = _regionMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await SyncBackendClient.SaveRegion(dto);
+                await HandleRequest(SyncBackendClient.SaveRegion(dto));
             }
         }
 
@@ -343,7 +365,7 @@ namespace SimpleSyncPlugin.Services
             var dto = _regionMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await SyncBackendClient.DeleteRegion(dto);
+                await HandleRequest(SyncBackendClient.DeleteRegion(dto));
             }
         }
 
@@ -352,7 +374,7 @@ namespace SimpleSyncPlugin.Services
             var dto = _sourceMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await SyncBackendClient.SaveSource(dto);
+                await HandleRequest(SyncBackendClient.SaveSource(dto));
             }
         }
 
@@ -361,7 +383,7 @@ namespace SimpleSyncPlugin.Services
             var dto = _sourceMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await SyncBackendClient.DeleteSource(dto);
+                await HandleRequest(SyncBackendClient.DeleteSource(dto));
             }
         }
 
@@ -370,7 +392,7 @@ namespace SimpleSyncPlugin.Services
             var dto = _completionStatusMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await SyncBackendClient.SaveCompletionStatus(dto);
+                await HandleRequest(SyncBackendClient.SaveCompletionStatus(dto));
             }
         }
 
@@ -379,7 +401,7 @@ namespace SimpleSyncPlugin.Services
             var dto = _completionStatusMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await SyncBackendClient.DeleteCompletionStatus(dto);
+                await HandleRequest(SyncBackendClient.DeleteCompletionStatus(dto));
             }
         }
 
@@ -388,7 +410,7 @@ namespace SimpleSyncPlugin.Services
             var dto = _filterPresetMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await SyncBackendClient.SaveFilterPreset(dto);
+                await HandleRequest(SyncBackendClient.SaveFilterPreset(dto));
             }
         }
 
@@ -397,7 +419,7 @@ namespace SimpleSyncPlugin.Services
             var dto = _filterPresetMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await SyncBackendClient.DeleteFilterPreset(dto);
+                await HandleRequest(SyncBackendClient.DeleteFilterPreset(dto));
             }
         }
 
@@ -406,7 +428,8 @@ namespace SimpleSyncPlugin.Services
             var dto = _gameMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await SyncBackendClient.SaveGame(dto, category.Icon, category.CoverImage, category.BackgroundImage);
+                await HandleRequest(SyncBackendClient.SaveGame(dto, category.Icon, category.CoverImage,
+                    category.BackgroundImage));
             }
         }
 
@@ -417,13 +440,13 @@ namespace SimpleSyncPlugin.Services
             {
                 try
                 {
-                    await SyncBackendClient.SaveGameDiff(dto, newEntity.Icon, newEntity.CoverImage,
-                        newEntity.BackgroundImage);
+                    await HandleRequest(SyncBackendClient.SaveGameDiff(dto, newEntity.Icon, newEntity.CoverImage,
+                        newEntity.BackgroundImage));
                 }
                 catch (ManualSynchronizationRequiredException ex)
                 {
                     Logger.Error(ex, "ManualSynchronizationRequiredException");
-                    await SaveGame(newEntity);
+                    await HandleRequest(SaveGame(newEntity));
                 }
             }
         }
@@ -433,8 +456,80 @@ namespace SimpleSyncPlugin.Services
             var dto = _gameMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await SyncBackendClient.DeleteGame(dto);
+                await HandleRequest(SyncBackendClient.DeleteGame(dto));
             }
+        }
+
+        public async Task<List<ChangeMessage>> FetchAll()
+        {
+            if (SyncBackendClient == null)
+            {
+                return new List<ChangeMessage>();
+            }
+
+            return await HandleRequest(SyncBackendClient.FetchAll());
+        }
+
+        public async Task<List<ChangeMessage>> FetchRemainingChanges(long lastProcessedId)
+        {
+            if (SyncBackendClient == null)
+            {
+                return new List<ChangeMessage>();
+            }
+
+            return await HandleRequest(SyncBackendClient.FetchRemainingChanges(lastProcessedId));
+        }
+
+        private Task HandleRequest(Task requestTask)
+        {
+            return HandleRequest(Task.Run<object>(async () =>
+            {
+                await requestTask;
+                return null;
+            }));
+        }
+
+        private async Task<T> HandleRequest<T>(Task<T> requestTask)
+        {
+            try
+            {
+                return await requestTask;
+            }
+            catch (ForceFetchRequiredException ex)
+            {
+                Logger.Error(ex, $"Force fetch required for object!");
+                _api.Notifications.Add(new NotificationMessage(ForceFetchRequiredId,
+                    GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_ForceFetchRequired"), NotificationType.Error));
+                throw;
+            }
+            catch (HttpStatusException ex)
+            {
+                Logger.Error(ex, $"Request failed!");
+                _api.Notifications.Add(new NotificationMessage(HttpErrorId,
+                    string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_HttpStatusError"), ex.StatusCode,
+                        ex.Message), NotificationType.Error));
+                throw;
+            }
+            catch (HttpRequestException ex)
+            {
+                Logger.Error(ex, $"Request failed!");
+                _api.Notifications.Add(new NotificationMessage(HttpErrorId,
+                    string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_HttpError"), ex.Message),
+                    NotificationType.Error));
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, $"Request failed!");
+                _api.Notifications.Add(new NotificationMessage(ClientErrorId,
+                    GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_UnexpectedError"), NotificationType.Error));
+                throw;
+            }
+        }
+
+        private string GetLocalizedString(string key)
+        {
+            return _api.GetLocalizedString(key);
         }
     }
 }

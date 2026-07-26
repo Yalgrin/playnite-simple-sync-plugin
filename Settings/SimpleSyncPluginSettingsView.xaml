@@ -20,7 +20,12 @@
                         DockPanel.Dock="Top" Margin="0,15,5,0" HorizontalAlignment="Left">
                 <TextBlock Text="{DynamicResource LOC_Yalgrin_SimpleSync_Settings_SyncServerAddress}" MinWidth="150" />
                 <TextBox Text="{Binding Settings.SyncServerAddress}" MinWidth="350" />
-                <TextBlock Text="{Binding StatusMessage}" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal"
+                        DockPanel.Dock="Top" Margin="0,15,5,0" HorizontalAlignment="Left">
+                <TextBlock Text="{DynamicResource LOC_Yalgrin_SimpleSync_Settings_Status}" MinWidth="150" />
+                <TextBlock Text="{Binding StatusMessage}" MinWidth="350" />
             </StackPanel>
 
             <StackPanel Orientation="Horizontal"

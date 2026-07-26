@@ -1,10 +1,13 @@
 ﻿using System;
 using System.IO;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Playnite.SDK;
+using SimpleSyncPlugin.Exceptions;
+using SimpleSyncPlugin.Extensions;
 using SimpleSyncPlugin.Models;
 using SimpleSyncPlugin.Services;
 using SimpleSyncPlugin.Settings;
@@ -15,23 +18,28 @@ namespace SimpleSyncPlugin.Threading
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
 
+        private const string ClientErrorId = "Yalgrin-SimpleSyncPlugin-ClientError";
+        private const string HttpErrorId = "Yalgrin-SimpleSyncPlugin-HttpError";
+        private const string ForceFetchRequiredId = "Yalgrin-SimpleSyncPlugin-ForceFetchRequired";
+
         private readonly DataProcessingThread _dataProcessingThread;
         private readonly SyncBackendService _syncBackendService;
         private readonly SimpleSyncPluginSettingsViewModel _settings;
+        private readonly IPlayniteAPI _api;
         private readonly object _streamLock = new object();
 
         private CancellationTokenSource _shutdownCts;
         private Task _workerTask;
         private Stream _currentStream;
 
-        public ServerConnectionThread(
-            DataProcessingThread dataProcessingThread,
+        public ServerConnectionThread(DataProcessingThread dataProcessingThread,
             SyncBackendService syncBackendService,
-            SimpleSyncPluginSettingsViewModel settings)
+            SimpleSyncPluginSettingsViewModel settings, IPlayniteAPI playniteApi)
         {
             _dataProcessingThread = dataProcessingThread;
             _syncBackendService = syncBackendService;
             _settings = settings;
+            _api = playniteApi;
         }
 
         public void Start()
@@ -68,7 +76,7 @@ namespace SimpleSyncPlugin.Threading
                 if (syncBackendClient == null || !_settings.Settings.SynchronizationEnabled)
                 {
                     clientToken = syncBackendClient?.ShutdownToken;
-                    Logger.Trace("Live syncing is disabled, waiting...");
+                    Logger.Trace("Synchronization is disabled, waiting...");
                     await Task.Delay(10000, cancellationToken);
                     return;
                 }
@@ -122,7 +130,7 @@ namespace SimpleSyncPlugin.Threading
             CancellationToken cancellationToken)
         {
             Logger.Info("Connecting to sync server...");
-            var stream = await syncBackendClient.GetStream(_settings.Settings.LastProcessedId, cancellationToken);
+            var stream = await DoConnect(syncBackendClient, cancellationToken);
             if (stream == null)
             {
                 Logger.Trace("Failed to acquire stream, waiting...");
@@ -204,6 +212,42 @@ namespace SimpleSyncPlugin.Threading
                     }
                 }
             }
+        }
+
+        private async Task<Stream> DoConnect(SyncBackendClient syncBackendClient, CancellationToken cancellationToken)
+        {
+            try
+            {
+                return await syncBackendClient.Connect(_settings.Settings.LastProcessedId, cancellationToken);
+            }
+            catch (HttpStatusException ex)
+            {
+                Logger.Error(ex, $"Failed to connect!");
+                _api.Notifications.Add(new NotificationMessage(HttpErrorId,
+                    string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_HttpStatusError"), ex.StatusCode,
+                        ex.Message), NotificationType.Error));
+                throw;
+            }
+            catch (HttpRequestException ex)
+            {
+                Logger.Error(ex, $"Failed to connect!");
+                _api.Notifications.Add(new NotificationMessage(HttpErrorId,
+                    string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_HttpError"), ex.Message),
+                    NotificationType.Error));
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, $"Failed to connect!");
+                _api.Notifications.Add(new NotificationMessage(ClientErrorId,
+                    GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_UnexpectedError"), NotificationType.Error));
+                throw;
+            }
+        }
+
+        private string GetLocalizedString(string key)
+        {
+            return _api.GetLocalizedString(key);
         }
 
         public void Shutdown()

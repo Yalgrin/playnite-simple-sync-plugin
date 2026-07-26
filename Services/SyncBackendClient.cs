@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Playnite.SDK;
 using SimpleSyncPlugin.Exceptions;
-using SimpleSyncPlugin.Extensions;
 using SimpleSyncPlugin.Models;
 using SimpleSyncPlugin.Settings;
 using SimpleSyncPlugin.Threading;
@@ -19,10 +18,6 @@ namespace SimpleSyncPlugin.Services
     public class SyncBackendClient
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
-
-        private const string ClientErrorId = "Yalgrin-SimpleSyncPlugin-ClientError";
-        private const string HttpErrorId = "Yalgrin-SimpleSyncPlugin-HttpError";
-        private const string ForceFetchRequiredId = "Yalgrin-SimpleSyncPlugin-ForceFetchRequired";
 
         private const int SupportedApiVersion = 1;
 
@@ -68,578 +63,331 @@ namespace SimpleSyncPlugin.Services
             ShouldShutdown = false;
         }
 
-        public Task<RegisteredClientDto> RegisterClient(RegistrationRequestDto requestDto)
+        public Task<RegisteredClientDto> RegisterClient(RegistrationRequestDto requestDto,
+            CancellationToken cancellationToken = default)
         {
             Logger.Debug(
-                $"Registering client {requestDto.DisplayName} with supported API version {requestDto.SupportedApiVersion}...");
-            return SendPostRequestWithResult<RegistrationRequestDto, RegisteredClientDto>("/api/client/register",
-                new RegistrationRequestDto
-                {
-                    DisplayName = requestDto.DisplayName,
-                    SupportedApiVersion = SupportedApiVersion
-                });
-        }
-
-        public Task<CheckResultDto> CheckConnection()
-        {
-            return SendPostRequestWithResult<CheckRequestDto, CheckResultDto>("/api/client/check",
-                new CheckRequestDto { SupportedApiVersion = SupportedApiVersion });
-        }
-
-        public Task EnableChangeStream()
-        {
-            return SendPostRequest("/api/client/enable-change-stream");
-        }
-
-        public Task DisableChangeStream()
-        {
-            return SendPostRequest("/api/client/enable-change-stream");
-        }
-
-        public Task<CategoryDto> GetCategory(long id)
-        {
-            return GetObject<CategoryDto>(id, "category");
-        }
-
-        public Task SaveCategory(CategoryDto dto)
-        {
-            return SaveObject(dto, "category");
-        }
-
-        public Task DeleteCategory(CategoryDto category)
-        {
-            return DeleteObject(category, "category");
-        }
-
-        public Task<GenreDto> GetGenre(long id)
-        {
-            return GetObject<GenreDto>(id, "genre");
-        }
-
-        public Task SaveGenre(GenreDto dto)
-        {
-            return SaveObject(dto, "genre");
-        }
-
-        public Task DeleteGenre(GenreDto dto)
-        {
-            return DeleteObject(dto, "genre");
-        }
-
-        public Task<PlatformDto> GetPlatform(long id)
-        {
-            return GetObject<PlatformDto>(id, "platform");
-        }
-
-        public Task<PlatformDiffDto> GetPlatformDiff(long id)
-        {
-            return GetObject<PlatformDiffDto>(id, "platform-diff");
-        }
-
-        public Task<Tuple<byte[], string>> GetPlatformMetadata(long id, string filename)
-        {
-            return GetMetadata(id, filename, "platform-metadata");
-        }
-
-        public Task SavePlatform(PlatformDto dto, string icon, string coverImage, string backgroundImage)
-        {
-            return SaveObjectWithMetadata(dto, "platform", icon, coverImage, backgroundImage);
-        }
-
-        public Task SavePlatformDiff(PlatformDiffDto dto, string icon, string coverImage, string backgroundImage)
-        {
-            return SaveObjectDiffWithMetadata(dto, "platform-diff", icon, coverImage, backgroundImage);
-        }
-
-        public Task DeletePlatform(PlatformDto dto)
-        {
-            return DeleteObject(dto, "platform");
-        }
-
-        public Task<CompanyDto> GetCompany(long id)
-        {
-            return GetObject<CompanyDto>(id, "company");
-        }
-
-        public Task SaveCompany(CompanyDto dto)
-        {
-            return SaveObject(dto, "company");
-        }
-
-        public Task DeleteCompany(CompanyDto dto)
-        {
-            return DeleteObject(dto, "company");
-        }
-
-        public Task<FeatureDto> GetFeature(long id)
-        {
-            return GetObject<FeatureDto>(id, "feature");
-        }
-
-        public Task SaveFeature(FeatureDto dto)
-        {
-            return SaveObject(dto, "feature");
-        }
-
-        public Task DeleteFeature(FeatureDto dto)
-        {
-            return DeleteObject(dto, "feature");
-        }
-
-        public Task<TagDto> GetTag(long id)
-        {
-            return GetObject<TagDto>(id, "tag");
-        }
-
-        public Task SaveTag(TagDto dto)
-        {
-            return SaveObject(dto, "tag");
-        }
-
-        public Task DeleteTag(TagDto dto)
-        {
-            return DeleteObject(dto, "tag");
-        }
-
-        public Task<SeriesDto> GetSeries(long id)
-        {
-            return GetObject<SeriesDto>(id, "series");
-        }
-
-        public Task SaveSeries(SeriesDto dto)
-        {
-            return SaveObject(dto, "series");
-        }
-
-        public Task DeleteSeries(SeriesDto dto)
-        {
-            return DeleteObject(dto, "series");
-        }
-
-        public Task<AgeRatingDto> GetAgeRating(long id)
-        {
-            return GetObject<AgeRatingDto>(id, "age-rating");
-        }
-
-        public Task SaveAgeRating(AgeRatingDto dto)
-        {
-            return SaveObject(dto, "age-rating");
-        }
-
-        public Task DeleteAgeRating(AgeRatingDto dto)
-        {
-            return DeleteObject(dto, "age-rating");
-        }
-
-        public Task<RegionDto> GetRegion(long id)
-        {
-            return GetObject<RegionDto>(id, "region");
-        }
-
-        public Task SaveRegion(RegionDto dto)
-        {
-            return SaveObject(dto, "region");
-        }
-
-        public Task DeleteRegion(RegionDto dto)
-        {
-            return DeleteObject(dto, "region");
-        }
-
-        public Task<SourceDto> GetSource(long id)
-        {
-            return GetObject<SourceDto>(id, "source");
-        }
-
-        public Task SaveSource(SourceDto dto)
-        {
-            return SaveObject(dto, "source");
-        }
-
-        public Task DeleteSource(SourceDto dto)
-        {
-            return DeleteObject(dto, "source");
-        }
-
-        public Task<CompletionStatusDto> GetCompletionStatus(long id)
-        {
-            return GetObject<CompletionStatusDto>(id, "completion-status");
-        }
-
-        public Task SaveCompletionStatus(CompletionStatusDto dto)
-        {
-            return SaveObject(dto, "completion-status");
-        }
-
-        public Task DeleteCompletionStatus(CompletionStatusDto dto)
-        {
-            return DeleteObject(dto, "completion-status");
-        }
-
-        public Task<FilterPresetDto> GetFilterPreset(long id)
-        {
-            return GetObject<FilterPresetDto>(id, "filter-preset");
-        }
-
-        public Task SaveFilterPreset(FilterPresetDto dto)
-        {
-            return SaveObject(dto, "filter-preset");
-        }
-
-        public Task DeleteFilterPreset(FilterPresetDto dto)
-        {
-            return DeleteObject(dto, "filter-preset");
-        }
-
-        public Task<GameDto> GetGame(long id)
-        {
-            return GetObject<GameDto>(id, "game");
-        }
-
-        public Task<GameDiffDto> GetGameDiff(long id)
-        {
-            return GetObject<GameDiffDto>(id, "game-diff");
-        }
-
-        public Task<Tuple<byte[], string>> GetGameMetadata(long id, string filename)
-        {
-            return GetMetadata(id, filename, "game-metadata");
-        }
-
-        public Task SaveGame(GameDto dto, string icon, string coverImage, string backgroundImage)
-        {
-            return SaveObjectWithMetadata(dto, "game", icon, coverImage, backgroundImage);
-        }
-
-        public Task SaveGameDiff(GameDiffDto dto, string icon, string coverImage, string backgroundImage)
-        {
-            return SaveObjectDiffWithMetadata(dto, "game-diff", icon, coverImage, backgroundImage);
-        }
-
-        public Task DeleteGame(GameDto dto)
-        {
-            return DeleteObject(dto, "game");
-        }
-
-        public async Task<Stream> GetStream(long lastProcessedId, CancellationToken cancellationToken = default)
-        {
-            try
+                $"Registering client {requestDto.DisplayName} with supported API version {SupportedApiVersion}...");
+            var request = new RegistrationRequestDto
             {
-                var request = new HttpRequestMessage(HttpMethod.Post,
-                    $"/api/client/connect?lastChangeId={lastProcessedId}");
-                var sessionId = SessionManager.CurrentSession?.SessionId;
-                if (sessionId != null)
-                {
-                    request.Headers.Add("X-Session-Id", sessionId);
-                }
-
-                var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_shutdownCts.Token, cancellationToken);
-                CancellationToken mergedToken = linkedCts.Token;
-                var response =
-                    await _longTimeoutHttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead,
-                        mergedToken);
-                response.EnsureSuccessStatusCode();
-                var stream = await response.Content.ReadAsStreamAsync();
-                lock (_heldStreams)
-                {
-                    _heldStreams.Add(stream);
-                }
-
-                return stream;
-            }
-            catch (HttpStatusException ex)
-            {
-                Logger.Error(ex, $"Failed to get stream!");
-                _api.Notifications.Add(new NotificationMessage(HttpErrorId,
-                    string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_HttpStatusError"), ex.StatusCode,
-                        ex.Message), NotificationType.Error));
-                throw;
-            }
-            catch (HttpRequestException ex)
-            {
-                Logger.Error(ex, $"Failed to get stream!");
-                _api.Notifications.Add(new NotificationMessage(HttpErrorId,
-                    string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_HttpError"), ex.Message),
-                    NotificationType.Error));
-                throw;
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, $"Failed to get stream!");
-                _api.Notifications.Add(new NotificationMessage(ClientErrorId,
-                    GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_UnexpectedError"), NotificationType.Error));
-                throw;
-            }
+                DisplayName = requestDto.DisplayName,
+                SupportedApiVersion = SupportedApiVersion
+            };
+            return DoJsonRequest<RegisteredClientDto>(HttpMethod.Post, "/api/client/register", cancellationToken,
+                request);
         }
 
-        public async Task<List<ChangeMessage>> FetchAll()
+        public Task<CheckResultDto> CheckConnection(CancellationToken cancellationToken = default)
         {
-            try
-            {
-                return await FetchObjectUsingGetRequest<List<ChangeMessage>>("/api/change/all");
-            }
-            catch (HttpStatusException ex)
-            {
-                Logger.Error(ex, $"Failed to get all objects!");
-                _api.Notifications.Add(new NotificationMessage(HttpErrorId,
-                    string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_HttpStatusError"), ex.StatusCode,
-                        ex.Message), NotificationType.Error));
-                throw;
-            }
-            catch (HttpRequestException ex)
-            {
-                Logger.Error(ex, $"Failed to get all objects!");
-                _api.Notifications.Add(new NotificationMessage(HttpErrorId,
-                    string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_HttpError"), ex.Message),
-                    NotificationType.Error));
-                throw;
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, $"Failed to get all objects!");
-                _api.Notifications.Add(new NotificationMessage(ClientErrorId,
-                    GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_UnexpectedError"), NotificationType.Error));
-                throw;
-            }
+            Logger.Debug("Checking connection...");
+            var request = new CheckRequestDto { SupportedApiVersion = SupportedApiVersion };
+            return DoJsonRequest<CheckResultDto>(HttpMethod.Post, "/api/client/check",
+                cancellationToken, request);
         }
 
-        public async Task<List<ChangeMessage>> FetchRemainingChanges(long lastProcessedId)
+        public Task EnableChangeStream(CancellationToken cancellationToken = default)
         {
-            try
-            {
-                return await FetchObjectUsingGetRequest<List<ChangeMessage>>(
-                    $"/api/change?lastChangeId={lastProcessedId}");
-            }
-            catch (HttpStatusException ex)
-            {
-                Logger.Error(ex, $"Failed to get remaining changes!");
-                _api.Notifications.Add(new NotificationMessage(HttpErrorId,
-                    string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_HttpStatusError"), ex.StatusCode,
-                        ex.Message), NotificationType.Error));
-                throw;
-            }
-            catch (HttpRequestException ex)
-            {
-                Logger.Error(ex, $"Failed to get remaining changes!");
-                _api.Notifications.Add(new NotificationMessage(HttpErrorId,
-                    string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_HttpError"), ex.Message),
-                    NotificationType.Error));
-                throw;
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, $"Failed to get remaining changes!");
-                _api.Notifications.Add(new NotificationMessage(ClientErrorId,
-                    GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_UnexpectedError"), NotificationType.Error));
-                throw;
-            }
+            Logger.Debug("Enabling change stream...");
+            return DoJsonRequest(HttpMethod.Post, "/api/client/enable-change-stream", cancellationToken);
         }
 
-        public async Task<List<ChangeMessage>> FetchGames(GameChangeRequestDto dto)
+        public Task DisableChangeStream(CancellationToken cancellationToken = default)
         {
-            try
-            {
-                return await SendPostRequestWithResult<GameChangeRequestDto, List<ChangeMessage>>($"/api/change/games",
-                    dto);
-            }
-            catch (HttpStatusException ex)
-            {
-                Logger.Error(ex, $"Failed to get remaining changes!");
-                _api.Notifications.Add(new NotificationMessage(HttpErrorId,
-                    string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_HttpStatusError"), ex.StatusCode,
-                        ex.Message), NotificationType.Error));
-                throw;
-            }
-            catch (HttpRequestException ex)
-            {
-                Logger.Error(ex, $"Failed to get remaining changes!");
-                _api.Notifications.Add(new NotificationMessage(HttpErrorId,
-                    string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_HttpError"), ex.Message),
-                    NotificationType.Error));
-                throw;
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, $"Failed to get remaining changes!");
-                _api.Notifications.Add(new NotificationMessage(ClientErrorId,
-                    GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_UnexpectedError"), NotificationType.Error));
-                throw;
-            }
+            Logger.Debug("Disabling change stream...");
+            return DoJsonRequest(HttpMethod.Post, "/api/client/disable-change-stream", cancellationToken);
         }
 
-        private async Task<T> GetObject<T>(long id, string objectPath) where T : class
+        public Task<CategoryDto> GetCategory(long id, CancellationToken cancellationToken = default)
         {
-            try
-            {
-                return await FetchObjectUsingGetRequest<T>($"/api/{objectPath}/{id}");
-            }
-            catch (HttpStatusException ex)
-            {
-                Logger.Error(ex, $"Failed to get object \"{objectPath}\" with id = {id}");
-                _api.Notifications.Add(new NotificationMessage(HttpErrorId,
-                    string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_HttpStatusError"), ex.StatusCode,
-                        ex.Message), NotificationType.Error));
-                throw;
-            }
-            catch (HttpRequestException ex)
-            {
-                Logger.Error(ex, $"Failed to get object \"{objectPath}\" with id = {id}");
-                _api.Notifications.Add(new NotificationMessage(HttpErrorId,
-                    string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_HttpError"), ex.Message),
-                    NotificationType.Error));
-                throw;
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, $"Failed to get object \"{objectPath}\" with id = {id}");
-                _api.Notifications.Add(new NotificationMessage(ClientErrorId,
-                    GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_UnexpectedError"), NotificationType.Error));
-                throw;
-            }
+            return GetObject<CategoryDto>(id, "category", cancellationToken);
         }
 
-        private async Task<Tuple<byte[], string>> GetMetadata(long id, string filename, string objectPath)
+        public Task SaveCategory(CategoryDto dto, CancellationToken cancellationToken = default)
         {
-            try
-            {
-                return await FetchMetadataUsingGetMethod($"/api/{objectPath}/{id}/{filename}");
-            }
-            catch (HttpStatusException ex)
-            {
-                Logger.Error(ex, $"Failed to get metadata \"{objectPath}\" with id = {id} and filename = {filename}");
-                _api.Notifications.Add(new NotificationMessage(HttpErrorId,
-                    string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_HttpStatusError"), ex.StatusCode,
-                        ex.Message), NotificationType.Error));
-                throw;
-            }
-            catch (HttpRequestException ex)
-            {
-                Logger.Error(ex, $"Failed to get metadata \"{objectPath}\" with id = {id} and filename = {filename}");
-                _api.Notifications.Add(new NotificationMessage(HttpErrorId,
-                    string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_HttpError"), ex.Message),
-                    NotificationType.Error));
-                throw;
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, $"Failed to get metadata \"{objectPath}\" with id = {id} and filename = {filename}");
-                _api.Notifications.Add(new NotificationMessage(ClientErrorId,
-                    GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_UnexpectedError"), NotificationType.Error));
-                throw;
-            }
+            return SaveObject(dto, "category", cancellationToken);
         }
 
-        private async Task<Tuple<byte[], string>> FetchMetadataUsingGetMethod(string uri)
+        public Task DeleteCategory(CategoryDto category, CancellationToken cancellationToken = default)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, uri);
-            var sessionId = SessionManager.CurrentSession?.SessionId;
-            if (sessionId != null)
-            {
-                request.Headers.Add("X-Session-Id", sessionId);
-            }
-
-            var response = await _httpClient.SendAsync(request);
-            if (response.StatusCode == HttpStatusCode.NotFound)
-            {
-                return null;
-            }
-
-            if (response.IsSuccessStatusCode)
-            {
-                var resultContent = response.Content;
-                var fileName = resultContent.Headers.ContentDisposition.FileName;
-                if (fileName != null && fileName.StartsWith("\"") && fileName.EndsWith("\""))
-                {
-                    fileName = fileName.Substring(1, fileName.Length - 2);
-                }
-
-                return new Tuple<byte[], string>(await resultContent.ReadAsByteArrayAsync(), fileName);
-            }
-
-            await TryToExtractError(response);
-            return null;
+            return DeleteObject(category, "category", cancellationToken);
         }
 
-        private async Task SaveObject<T>(T entity, string objectPath) where T : AbstractDto
+        public Task<GenreDto> GetGenre(long id, CancellationToken cancellationToken = default)
         {
-            try
-            {
-                await SendPostRequest($"/api/{objectPath}/save", entity);
-            }
-            catch (ForceFetchRequiredException ex)
-            {
-                Logger.Error(ex, $"Force fetch required for object \"{objectPath}\" with id = {entity.Id}");
-                _api.Notifications.Add(new NotificationMessage(ForceFetchRequiredId,
-                    GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_ForceFetchRequired"), NotificationType.Error));
-                throw;
-            }
-            catch (HttpStatusException ex)
-            {
-                Logger.Error(ex, $"Failed to save object \"{objectPath}\" with id = {entity.Id}");
-                _api.Notifications.Add(new NotificationMessage(HttpErrorId,
-                    string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_HttpStatusError"), ex.StatusCode,
-                        ex.Message), NotificationType.Error));
-                throw;
-            }
-            catch (HttpRequestException ex)
-            {
-                Logger.Error(ex, $"Failed to save object \"{objectPath}\" with id = {entity.Id}");
-                _api.Notifications.Add(new NotificationMessage(HttpErrorId,
-                    string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_HttpError"), ex.Message),
-                    NotificationType.Error));
-                throw;
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, $"Failed to save object \"{objectPath}\" with id = {entity.Id}");
-                _api.Notifications.Add(new NotificationMessage(ClientErrorId,
-                    GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_UnexpectedError"), NotificationType.Error));
-                throw;
-            }
+            return GetObject<GenreDto>(id, "genre", cancellationToken);
         }
 
-        private async Task SaveObjectWithMetadata<T>(T dto,
-            string objectPath, string icon, string coverImage, string backgroundImage) where T : AbstractDto
+        public Task SaveGenre(GenreDto dto, CancellationToken cancellationToken = default)
         {
-            try
-            {
-                var content = new MultipartFormDataContent();
-                content.Add(CreateJsonContent(dto), "dto");
-                AddFileToMultipartRequest(content, icon, "Icon");
-                AddFileToMultipartRequest(content, coverImage, "CoverImage");
-                AddFileToMultipartRequest(content, backgroundImage, "BackgroundImage");
-                await DoSendPostRequest($"/api/{objectPath}/save", content);
-            }
-            catch (ForceFetchRequiredException ex)
-            {
-                Logger.Error(ex, $"Force fetch required for object \"{objectPath}\" with id = {dto.Id}");
-                _api.Notifications.Add(new NotificationMessage(ForceFetchRequiredId,
-                    GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_ForceFetchRequired"), NotificationType.Error));
-                throw;
-            }
-            catch (HttpStatusException ex)
-            {
-                Logger.Error(ex, $"Failed to save object \"{objectPath}\" with id = {dto.Id}");
-                _api.Notifications.Add(new NotificationMessage(HttpErrorId,
-                    string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_HttpStatusError"), ex.StatusCode,
-                        ex.Message), NotificationType.Error));
-                throw;
-            }
-            catch (HttpRequestException ex)
-            {
-                Logger.Error(ex, $"Failed to save object \"{objectPath}\" with id = {dto.Id}");
-                _api.Notifications.Add(new NotificationMessage(HttpErrorId,
-                    string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_HttpError"), ex.Message),
-                    NotificationType.Error));
-                throw;
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, $"Failed to save object \"{objectPath}\" with id = {dto.Id}");
-                _api.Notifications.Add(new NotificationMessage(ClientErrorId,
-                    GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_UnexpectedError"), NotificationType.Error));
-                throw;
-            }
+            return SaveObject(dto, "genre", cancellationToken);
+        }
+
+        public Task DeleteGenre(GenreDto dto, CancellationToken cancellationToken = default)
+        {
+            return DeleteObject(dto, "genre", cancellationToken);
+        }
+
+        public Task<PlatformDto> GetPlatform(long id, CancellationToken cancellationToken = default)
+        {
+            return GetObject<PlatformDto>(id, "platform", cancellationToken);
+        }
+
+        public Task<PlatformDiffDto> GetPlatformDiff(long id, CancellationToken cancellationToken = default)
+        {
+            return GetObject<PlatformDiffDto>(id, "platform-diff", cancellationToken);
+        }
+
+        public Task<Tuple<byte[], string>> GetPlatformMetadata(long id, string filename,
+            CancellationToken cancellationToken = default)
+        {
+            return GetMetadata(id, filename, "platform-metadata", cancellationToken);
+        }
+
+        public Task SavePlatform(PlatformDto dto, string icon, string coverImage, string backgroundImage,
+            CancellationToken cancellationToken = default)
+        {
+            return SaveObjectWithMetadata(dto, "platform", icon, coverImage, backgroundImage, cancellationToken);
+        }
+
+        public Task SavePlatformDiff(PlatformDiffDto dto, string icon, string coverImage, string backgroundImage,
+            CancellationToken cancellationToken = default)
+        {
+            return SaveObjectDiffWithMetadata(dto, "platform-diff", icon, coverImage, backgroundImage,
+                cancellationToken);
+        }
+
+        public Task DeletePlatform(PlatformDto dto, CancellationToken cancellationToken = default)
+        {
+            return DeleteObject(dto, "platform", cancellationToken);
+        }
+
+        public Task<CompanyDto> GetCompany(long id, CancellationToken cancellationToken = default)
+        {
+            return GetObject<CompanyDto>(id, "company", cancellationToken);
+        }
+
+        public Task SaveCompany(CompanyDto dto, CancellationToken cancellationToken = default)
+        {
+            return SaveObject(dto, "company", cancellationToken);
+        }
+
+        public Task DeleteCompany(CompanyDto dto, CancellationToken cancellationToken = default)
+        {
+            return DeleteObject(dto, "company", cancellationToken);
+        }
+
+        public Task<FeatureDto> GetFeature(long id, CancellationToken cancellationToken = default)
+        {
+            return GetObject<FeatureDto>(id, "feature", cancellationToken);
+        }
+
+        public Task SaveFeature(FeatureDto dto, CancellationToken cancellationToken = default)
+        {
+            return SaveObject(dto, "feature", cancellationToken);
+        }
+
+        public Task DeleteFeature(FeatureDto dto, CancellationToken cancellationToken = default)
+        {
+            return DeleteObject(dto, "feature", cancellationToken);
+        }
+
+        public Task<TagDto> GetTag(long id, CancellationToken cancellationToken = default)
+        {
+            return GetObject<TagDto>(id, "tag", cancellationToken);
+        }
+
+        public Task SaveTag(TagDto dto, CancellationToken cancellationToken = default)
+        {
+            return SaveObject(dto, "tag", cancellationToken);
+        }
+
+        public Task DeleteTag(TagDto dto, CancellationToken cancellationToken = default)
+        {
+            return DeleteObject(dto, "tag", cancellationToken);
+        }
+
+        public Task<SeriesDto> GetSeries(long id, CancellationToken cancellationToken = default)
+        {
+            return GetObject<SeriesDto>(id, "series", cancellationToken);
+        }
+
+        public Task SaveSeries(SeriesDto dto, CancellationToken cancellationToken = default)
+        {
+            return SaveObject(dto, "series", cancellationToken);
+        }
+
+        public Task DeleteSeries(SeriesDto dto, CancellationToken cancellationToken = default)
+        {
+            return DeleteObject(dto, "series", cancellationToken);
+        }
+
+        public Task<AgeRatingDto> GetAgeRating(long id, CancellationToken cancellationToken = default)
+        {
+            return GetObject<AgeRatingDto>(id, "age-rating", cancellationToken);
+        }
+
+        public Task SaveAgeRating(AgeRatingDto dto, CancellationToken cancellationToken = default)
+        {
+            return SaveObject(dto, "age-rating", cancellationToken);
+        }
+
+        public Task DeleteAgeRating(AgeRatingDto dto, CancellationToken cancellationToken = default)
+        {
+            return DeleteObject(dto, "age-rating", cancellationToken);
+        }
+
+        public Task<RegionDto> GetRegion(long id, CancellationToken cancellationToken = default)
+        {
+            return GetObject<RegionDto>(id, "region", cancellationToken);
+        }
+
+        public Task SaveRegion(RegionDto dto, CancellationToken cancellationToken = default)
+        {
+            return SaveObject(dto, "region", cancellationToken);
+        }
+
+        public Task DeleteRegion(RegionDto dto, CancellationToken cancellationToken = default)
+        {
+            return DeleteObject(dto, "region", cancellationToken);
+        }
+
+        public Task<SourceDto> GetSource(long id, CancellationToken cancellationToken = default)
+        {
+            return GetObject<SourceDto>(id, "source", cancellationToken);
+        }
+
+        public Task SaveSource(SourceDto dto, CancellationToken cancellationToken = default)
+        {
+            return SaveObject(dto, "source", cancellationToken);
+        }
+
+        public Task DeleteSource(SourceDto dto, CancellationToken cancellationToken = default)
+        {
+            return DeleteObject(dto, "source", cancellationToken);
+        }
+
+        public Task<CompletionStatusDto> GetCompletionStatus(long id, CancellationToken cancellationToken = default)
+        {
+            return GetObject<CompletionStatusDto>(id, "completion-status", cancellationToken);
+        }
+
+        public Task SaveCompletionStatus(CompletionStatusDto dto, CancellationToken cancellationToken = default)
+        {
+            return SaveObject(dto, "completion-status", cancellationToken);
+        }
+
+        public Task DeleteCompletionStatus(CompletionStatusDto dto, CancellationToken cancellationToken = default)
+        {
+            return DeleteObject(dto, "completion-status", cancellationToken);
+        }
+
+        public Task<FilterPresetDto> GetFilterPreset(long id, CancellationToken cancellationToken = default)
+        {
+            return GetObject<FilterPresetDto>(id, "filter-preset", cancellationToken);
+        }
+
+        public Task SaveFilterPreset(FilterPresetDto dto, CancellationToken cancellationToken = default)
+        {
+            return SaveObject(dto, "filter-preset", cancellationToken);
+        }
+
+        public Task DeleteFilterPreset(FilterPresetDto dto, CancellationToken cancellationToken = default)
+        {
+            return DeleteObject(dto, "filter-preset", cancellationToken);
+        }
+
+        public Task<GameDto> GetGame(long id, CancellationToken cancellationToken = default)
+        {
+            return GetObject<GameDto>(id, "game", cancellationToken);
+        }
+
+        public Task<GameDiffDto> GetGameDiff(long id, CancellationToken cancellationToken = default)
+        {
+            return GetObject<GameDiffDto>(id, "game-diff", cancellationToken);
+        }
+
+        public Task<Tuple<byte[], string>> GetGameMetadata(long id, string filename,
+            CancellationToken cancellationToken = default)
+        {
+            return GetMetadata(id, filename, "game-metadata", cancellationToken);
+        }
+
+        public Task SaveGame(GameDto dto, string icon, string coverImage, string backgroundImage,
+            CancellationToken cancellationToken = default)
+        {
+            return SaveObjectWithMetadata(dto, "game", icon, coverImage, backgroundImage, cancellationToken);
+        }
+
+        public Task SaveGameDiff(GameDiffDto dto, string icon, string coverImage, string backgroundImage,
+            CancellationToken cancellationToken = default)
+        {
+            return SaveObjectDiffWithMetadata(dto, "game-diff", icon, coverImage, backgroundImage, cancellationToken);
+        }
+
+        public Task DeleteGame(GameDto dto, CancellationToken cancellationToken = default)
+        {
+            return DeleteObject(dto, "game", cancellationToken);
+        }
+
+        public Task<Stream> Connect(long lastProcessedId, CancellationToken cancellationToken = default)
+        {
+            Logger.Debug($"Connecting to the SSE endpoint...");
+            return DoStreamRequest(HttpMethod.Post, $"/api/client/connect?lastChangeId={lastProcessedId}",
+                cancellationToken);
+        }
+
+        public Task<List<ChangeMessage>> FetchAll(CancellationToken cancellationToken = default)
+        {
+            Logger.Debug($"Fetching all changes...");
+            return DoJsonRequest<List<ChangeMessage>>(HttpMethod.Get, "/api/change/all", cancellationToken);
+        }
+
+        public Task<List<ChangeMessage>> FetchRemainingChanges(long lastProcessedId,
+            CancellationToken cancellationToken = default)
+        {
+            Logger.Debug($"Fetching remaining changes (last processed id: {lastProcessedId})...");
+            return DoJsonRequest<List<ChangeMessage>>(HttpMethod.Get, $"/api/change?lastChangeId={lastProcessedId}",
+                cancellationToken);
+        }
+
+        public Task<List<ChangeMessage>> FetchGames(GameChangeRequestDto dto,
+            CancellationToken cancellationToken = default)
+        {
+            return DoJsonRequest<List<ChangeMessage>>(HttpMethod.Post, $"/api/change/games", cancellationToken, dto);
+        }
+
+        private Task<T> GetObject<T>(long id, string objectPath, CancellationToken cancellationToken = default)
+            where T : class
+        {
+            Logger.Debug($"Fetching object \"{objectPath}\" with id = \"{id}\"");
+            return DoJsonRequest<T>(HttpMethod.Get, $"/api/{objectPath}/{id}", cancellationToken);
+        }
+
+        private Task<Tuple<byte[], string>> GetMetadata(long id, string filename, string objectPath,
+            CancellationToken cancellationToken = default)
+        {
+            Logger.Debug($"Fetching file \"{filename}\" for object \"{objectPath}\" with id = \"{id}\"");
+            return DoMetadataRequest(HttpMethod.Get, $"/api/{objectPath}/{id}/{filename}", cancellationToken);
+        }
+
+        private Task SaveObject<T>(T entity, string objectPath, CancellationToken cancellationToken = default)
+            where T : AbstractDto
+        {
+            Logger.Debug($"Saving object \"{objectPath}\" with id = \"{entity.Id}\"");
+            return DoJsonRequest(HttpMethod.Post, $"/api/{objectPath}/save", cancellationToken, entity);
+        }
+
+        private Task SaveObjectWithMetadata<T>(T dto,
+            string objectPath, string icon, string coverImage, string backgroundImage,
+            CancellationToken cancellationToken = default) where T : AbstractDto
+        {
+            Logger.Debug($"Saving object \"{objectPath}\" with id = \"{dto.Id}\" including metadata");
+            var content = new MultipartFormDataContent();
+            content.Add(CreateJsonContent(dto), "dto");
+            AddFileToMultipartRequest(content, icon, "Icon");
+            AddFileToMultipartRequest(content, coverImage, "CoverImage");
+            AddFileToMultipartRequest(content, backgroundImage, "BackgroundImage");
+            return DoRequest(HttpMethod.Post, $"/api/{objectPath}/save", cancellationToken, content);
         }
 
         private void AddFileToMultipartRequest(MultipartFormDataContent multipartContent, string localFileName,
@@ -663,53 +411,17 @@ namespace SimpleSyncPlugin.Services
             }
         }
 
-        private async Task SaveObjectDiffWithMetadata<T>(T dto,
-            string objectPath, string icon, string coverImage, string backgroundImage) where T : AbstractDiffDto
+        private Task SaveObjectDiffWithMetadata<T>(T dto,
+            string objectPath, string icon, string coverImage, string backgroundImage,
+            CancellationToken cancellationToken = default) where T : AbstractDiffDto
         {
-            try
-            {
-                var content = new MultipartFormDataContent();
-                content.Add(CreateJsonContent(dto), "dto");
-                AddMetadataToDiffMultipartRequest(content, dto, icon, "Icon");
-                AddMetadataToDiffMultipartRequest(content, dto, coverImage, "CoverImage");
-                AddMetadataToDiffMultipartRequest(content, dto, backgroundImage, "BackgroundImage");
-                await DoSendPostRequest($"/api/{objectPath}/save", content);
-            }
-            catch (ManualSynchronizationRequiredException ex)
-            {
-                Logger.Error(ex, $"Manual synchronization required for object \"{objectPath}\" with id = {dto.Id}");
-                throw;
-            }
-            catch (ForceFetchRequiredException ex)
-            {
-                Logger.Error(ex, $"Force fetch required for object \"{objectPath}\" with id = {dto.Id}");
-                _api.Notifications.Add(new NotificationMessage(ForceFetchRequiredId,
-                    GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_ForceFetchRequired"), NotificationType.Error));
-                throw;
-            }
-            catch (HttpStatusException ex)
-            {
-                Logger.Error(ex, $"Failed to save object \"{objectPath}\" with id = {dto.Id}");
-                _api.Notifications.Add(new NotificationMessage(HttpErrorId,
-                    string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_HttpStatusError"), ex.StatusCode,
-                        ex.Message), NotificationType.Error));
-                throw;
-            }
-            catch (HttpRequestException ex)
-            {
-                Logger.Error(ex, $"Failed to save object \"{objectPath}\" with id = {dto.Id}");
-                _api.Notifications.Add(new NotificationMessage(HttpErrorId,
-                    string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_HttpError"), ex.Message),
-                    NotificationType.Error));
-                throw;
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, $"Failed to save object \"{objectPath}\" with id = {dto.Id}");
-                _api.Notifications.Add(new NotificationMessage(ClientErrorId,
-                    GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_UnexpectedError"), NotificationType.Error));
-                throw;
-            }
+            Logger.Debug($"Saving object diff \"{objectPath}\" with id = \"{dto.Id}\" including metadata");
+            var content = new MultipartFormDataContent();
+            content.Add(CreateJsonContent(dto), "dto");
+            AddMetadataToDiffMultipartRequest(content, dto, icon, "Icon");
+            AddMetadataToDiffMultipartRequest(content, dto, coverImage, "CoverImage");
+            AddMetadataToDiffMultipartRequest(content, dto, backgroundImage, "BackgroundImage");
+            return DoRequest(HttpMethod.Post, $"/api/{objectPath}/save", cancellationToken, content);
         }
 
         private void AddMetadataToDiffMultipartRequest(MultipartFormDataContent multipartContent,
@@ -733,95 +445,144 @@ namespace SimpleSyncPlugin.Services
             }
         }
 
-        private async Task DeleteObject<T>(T dto, string objectPath) where T : AbstractDto
+        private Task DeleteObject<T>(T dto, string objectPath, CancellationToken cancellationToken = default)
+            where T : AbstractDto
         {
-            try
-            {
-                await SendPostRequest($"/api/{objectPath}/delete", dto);
-            }
-            catch (HttpStatusException ex)
-            {
-                Logger.Error(ex, $"Failed to delete object \"{objectPath}\" with id = {dto.Id}");
-                _api.Notifications.Add(new NotificationMessage(HttpErrorId,
-                    string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_HttpStatusError"), ex.StatusCode,
-                        ex.Message), NotificationType.Error));
-                throw;
-            }
-            catch (HttpRequestException ex)
-            {
-                Logger.Error(ex, $"Failed to delete object \"{objectPath}\" with id = {dto.Id}");
-                _api.Notifications.Add(new NotificationMessage(HttpErrorId,
-                    string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_HttpError"), ex.Message),
-                    NotificationType.Error));
-                throw;
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, $"Failed to delete object \"{objectPath}\" with id = {dto.Id}");
-                _api.Notifications.Add(new NotificationMessage(ClientErrorId,
-                    GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_UnexpectedError"), NotificationType.Error));
-                throw;
-            }
+            Logger.Debug($"Deleting object \"{objectPath}\" with id = \"{dto.Id}\"");
+            return DoJsonRequest(HttpMethod.Post, $"/api/{objectPath}/delete", cancellationToken, dto);
         }
 
-        private async Task<T> FetchObjectUsingGetRequest<T>(string uri) where T : class
+        private async Task<Tuple<byte[], string>> DoMetadataRequest(HttpMethod method, string uri,
+            CancellationToken cancellationToken = default, object bodyObject = null)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, uri);
+            var request = new HttpRequestMessage(method, uri);
             var sessionId = SessionManager.CurrentSession?.SessionId;
             if (sessionId != null)
             {
                 request.Headers.Add("X-Session-Id", sessionId);
             }
 
-            var response = await _httpClient.SendAsync(request);
-            var result = await response.Content.ReadAsStringAsync();
+            if (bodyObject != null)
+            {
+                request.Content = CreateJsonContent(bodyObject);
+            }
+
+            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_shutdownCts.Token, cancellationToken);
+            var mergedToken = linkedCts.Token;
+            var response = await _httpClient.SendAsync(request, mergedToken);
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+
             if (response.IsSuccessStatusCode)
             {
-                return JsonConvert.DeserializeObject<T>(result);
+                var resultContent = response.Content;
+                var fileName = resultContent.Headers.ContentDisposition.FileName;
+                if (fileName != null && fileName.StartsWith("\"") && fileName.EndsWith("\""))
+                {
+                    fileName = fileName.Substring(1, fileName.Length - 2);
+                }
+
+                return new Tuple<byte[], string>(await resultContent.ReadAsByteArrayAsync(), fileName);
             }
 
             await TryToExtractError(response);
             return null;
         }
 
-        private async Task<string> FetchStringUsingGetRequest(string uri)
+        private async Task<Stream> DoStreamRequest(HttpMethod method, string uri,
+            CancellationToken cancellationToken = default, object bodyObject = null)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, uri);
+            var request = new HttpRequestMessage(method, uri);
             var sessionId = SessionManager.CurrentSession?.SessionId;
             if (sessionId != null)
             {
                 request.Headers.Add("X-Session-Id", sessionId);
             }
 
-            var response = await _httpClient.SendAsync(request);
-            var result = await response.Content.ReadAsStringAsync();
+            if (bodyObject != null)
+            {
+                request.Content = CreateJsonContent(bodyObject);
+            }
+
+            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_shutdownCts.Token, cancellationToken);
+            CancellationToken mergedToken = linkedCts.Token;
+            var response =
+                await _longTimeoutHttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead,
+                    mergedToken);
             if (response.IsSuccessStatusCode)
             {
-                return result;
+                var stream = await response.Content.ReadAsStreamAsync();
+                lock (_heldStreams)
+                {
+                    _heldStreams.Add(stream);
+                }
+
+                return stream;
             }
 
             await TryToExtractError(response);
             return null;
         }
 
-        private Task SendPostRequest(string uri)
+        private async Task DoJsonRequest(HttpMethod method, string uri, CancellationToken cancellationToken = default,
+            object bodyObject = null)
         {
-            return DoSendPostRequest(uri, null);
+            var request = new HttpRequestMessage(method, uri);
+            var sessionId = SessionManager.CurrentSession?.SessionId;
+            if (sessionId != null)
+            {
+                request.Headers.Add("X-Session-Id", sessionId);
+            }
+
+            if (bodyObject != null)
+            {
+                request.Content = CreateJsonContent(bodyObject);
+            }
+
+            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_shutdownCts.Token, cancellationToken);
+            var response = await _httpClient.SendAsync(request, linkedCts.Token);
+            if (response.IsSuccessStatusCode)
+            {
+                return;
+            }
+
+            await TryToExtractError(response);
         }
 
-        private Task SendPostRequest<T>(string uri, T bodyObject) where T : class
+        private async Task<T> DoJsonRequest<T>(HttpMethod method, string uri,
+            CancellationToken cancellationToken = default,
+            object bodyObject = null) where T : class
         {
-            return DoSendPostRequest(uri, CreateJsonContent(bodyObject));
+            var request = new HttpRequestMessage(method, uri);
+            var sessionId = SessionManager.CurrentSession?.SessionId;
+            if (sessionId != null)
+            {
+                request.Headers.Add("X-Session-Id", sessionId);
+            }
+
+            if (bodyObject != null)
+            {
+                request.Content = CreateJsonContent(bodyObject);
+            }
+
+            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_shutdownCts.Token, cancellationToken);
+            var response = await _httpClient.SendAsync(request, linkedCts.Token);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadAsStringAsync();
+                return string.IsNullOrEmpty(result) ? null : JsonConvert.DeserializeObject<T>(result);
+            }
+
+            await TryToExtractError(response);
+            return null;
         }
 
-        private Task<TR> SendPostRequestWithResult<T, TR>(string uri, T bodyObject) where T : class where TR : class
+        private async Task DoRequest(HttpMethod method, string uri, CancellationToken cancellationToken = default,
+            HttpContent content = null)
         {
-            return DoSendPostRequestWithResult<TR>(uri, CreateJsonContent(bodyObject));
-        }
-
-        private async Task DoSendPostRequest(string uri, HttpContent content)
-        {
-            var request = new HttpRequestMessage(HttpMethod.Post, uri);
+            var request = new HttpRequestMessage(method, uri);
             var sessionId = SessionManager.CurrentSession?.SessionId;
             if (sessionId != null)
             {
@@ -833,64 +594,14 @@ namespace SimpleSyncPlugin.Services
                 request.Content = content;
             }
 
-            var response = await _httpClient.SendAsync(request);
+            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_shutdownCts.Token, cancellationToken);
+            var response = await _httpClient.SendAsync(request, linkedCts.Token);
             if (response.IsSuccessStatusCode)
             {
                 return;
             }
 
             await TryToExtractError(response);
-        }
-
-        private async Task<T> DoSendPostRequestWithResult<T>(string uri, HttpContent content) where T : class
-        {
-            var request = new HttpRequestMessage(HttpMethod.Post, uri);
-            var sessionId = SessionManager.CurrentSession?.SessionId;
-            if (sessionId != null)
-            {
-                request.Headers.Add("X-Session-Id", sessionId);
-            }
-
-            request.Content = content;
-            var response = await _httpClient.SendAsync(request);
-            var result = await response.Content.ReadAsStringAsync();
-            if (response.IsSuccessStatusCode)
-            {
-                return JsonConvert.DeserializeObject<T>(result);
-            }
-
-            await TryToExtractError(response);
-            return null;
-        }
-
-        private static async Task TryToExtractError(HttpResponseMessage response)
-        {
-            ErrorDto error = await DeserializeError(response);
-            if (response.StatusCode == HttpStatusCode.Conflict)
-            {
-                switch (error?.Message)
-                {
-                    case "manualSyncRequired":
-                        throw new ManualSynchronizationRequiredException();
-                    case "forceFetchRequired":
-                        throw new ForceFetchRequiredException();
-                }
-            }
-
-            throw new HttpStatusException(response.StatusCode, error?.Message ?? "Unexpected error!");
-        }
-
-        private static async Task<ErrorDto> DeserializeError(HttpResponseMessage response)
-        {
-            try
-            {
-                return JsonConvert.DeserializeObject<ErrorDto>(await response.Content.ReadAsStringAsync());
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, $"Failed to deserialize error body!");
-                return null;
-            }
         }
 
         private static StringContent CreateJsonContent<T>(T dto) where T : class
@@ -902,17 +613,47 @@ namespace SimpleSyncPlugin.Services
                 "application/json");
         }
 
+        private static async Task TryToExtractError(HttpResponseMessage response)
+        {
+            var error = await DeserializeError(response);
+            if (response.StatusCode == HttpStatusCode.Conflict)
+            {
+                switch (error?.Message)
+                {
+                    case "manualSyncRequired":
+                        throw new ManualSynchronizationRequiredException();
+                    case "forceFetchRequired":
+                        throw new ForceFetchRequiredException();
+                }
+            }
+            else if (response.StatusCode == HttpStatusCode.Unauthorized ||
+                     response.StatusCode == HttpStatusCode.Forbidden)
+            {
+                throw new AuthException(response.StatusCode.ToString());
+            }
+
+            throw new HttpStatusException(response.StatusCode, error?.Message ?? "Unexpected error!");
+        }
+
         private static string SerializeObject(object obj)
         {
-            return JsonConvert.SerializeObject(obj, Formatting.None, new JsonSerializerSettings()
+            return JsonConvert.SerializeObject(obj, Formatting.None, new JsonSerializerSettings
             {
                 NullValueHandling = NullValueHandling.Ignore
             });
         }
 
-        private string GetLocalizedString(string key)
+        private static async Task<ErrorDto> DeserializeError(HttpResponseMessage response)
         {
-            return _api.GetLocalizedString(key);
+            try
+            {
+                return JsonConvert.DeserializeObject<ErrorDto>(await response.Content.ReadAsStringAsync());
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Failed to deserialize error body!");
+                return null;
+            }
         }
 
         public void Shutdown()
@@ -937,7 +678,7 @@ namespace SimpleSyncPlugin.Services
                     }
                     catch (Exception ex)
                     {
-                        Logger.Error(ex, $"Failed to dispose stream!");
+                        Logger.Error(ex, "Failed to dispose stream!");
                     }
                 }
             }

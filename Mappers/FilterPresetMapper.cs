@@ -74,7 +74,7 @@ namespace SimpleSyncPlugin.Mappers
             };
         }
 
-        private IdItemPropertiesDto MapIdProperties(IdItemFilterItemProperties itemProperties)
+        private static IdItemPropertiesDto MapIdProperties(IdItemFilterItemProperties itemProperties)
         {
             if (itemProperties == null)
             {
@@ -184,7 +184,7 @@ namespace SimpleSyncPlugin.Mappers
             entity.ShowInFullscreeQuickSelection = dto.ShowInFullscreenQuickSelection;
         }
 
-        private StringFilterItemProperties MapStringProperties(StringItemPropertiesDto itemProperties)
+        private static StringFilterItemProperties MapStringProperties(StringItemPropertiesDto itemProperties)
         {
             if (itemProperties == null)
             {
@@ -197,7 +197,7 @@ namespace SimpleSyncPlugin.Mappers
             };
         }
 
-        private IdItemFilterItemProperties MapIdProperties(IdItemPropertiesDto itemProperties)
+        private static IdItemFilterItemProperties MapIdProperties(IdItemPropertiesDto itemProperties)
         {
             if (itemProperties == null)
             {
@@ -211,7 +211,7 @@ namespace SimpleSyncPlugin.Mappers
             };
         }
 
-        private EnumFilterItemProperties MapIntProperties(IntItemPropertiesDto itemProperties)
+        private static EnumFilterItemProperties MapIntProperties(IntItemPropertiesDto itemProperties)
         {
             if (itemProperties == null)
             {
@@ -224,7 +224,7 @@ namespace SimpleSyncPlugin.Mappers
             };
         }
 
-        private List<string> MapIds(List<Guid> ids)
+        private static List<string> MapIds(List<Guid> ids)
         {
             if (ids == null)
             {
@@ -241,7 +241,7 @@ namespace SimpleSyncPlugin.Mappers
             return list;
         }
 
-        private List<Guid> MapIds(List<string> ids)
+        private static List<Guid> MapIds(List<string> ids)
         {
             if (ids == null)
             {
@@ -258,7 +258,7 @@ namespace SimpleSyncPlugin.Mappers
             return list;
         }
 
-        private List<string> MapList(List<string> ids)
+        private static List<string> MapList(List<string> ids)
         {
             if (ids == null)
             {
@@ -270,7 +270,7 @@ namespace SimpleSyncPlugin.Mappers
             return list;
         }
 
-        private List<int> MapList(List<int> ids)
+        private static List<int> MapList(List<int> ids)
         {
             if (ids == null)
             {

@@ -12,8 +12,6 @@ namespace SimpleSyncPlugin.Services.Handlers
 {
     public class GameHandler : AbstractChangeHandler<Game, GameDto>
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
-
         private readonly SyncBackendService _syncBackendService;
 
         public GameHandler(IPlayniteAPI api, SyncBackendService syncBackendService,

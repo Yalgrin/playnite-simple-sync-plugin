@@ -11,6 +11,7 @@ using SimpleSyncPlugin.Mappers;
 using SimpleSyncPlugin.Models;
 using SimpleSyncPlugin.Settings;
 using SimpleSyncPlugin.Threading;
+using static SimpleSyncPlugin.Commons.MessageConstants;
 
 namespace SimpleSyncPlugin.Services
 {
@@ -20,11 +21,6 @@ namespace SimpleSyncPlugin.Services
 
         private readonly SimpleSyncPluginSettingsViewModel _settingsViewModel;
         private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
-
-        //TODO constants
-        private const string ClientErrorId = "Yalgrin-SimpleSyncPlugin-ClientError";
-        private const string HttpErrorId = "Yalgrin-SimpleSyncPlugin-HttpError";
-        private const string ForceFetchRequiredId = "Yalgrin-SimpleSyncPlugin-ForceFetchRequired";
 
         private readonly CategoryMapper _categoryMapper;
         private readonly GenreMapper _genreMapper;

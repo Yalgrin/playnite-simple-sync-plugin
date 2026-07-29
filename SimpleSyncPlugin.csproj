@@ -57,6 +57,8 @@
         <Reference Include="WindowsBase"/>
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="Commons\MessageConstants.cs"/>
+        <Compile Include="Commons\RestConstants.cs"/>
         <Compile Include="Exceptions\Exceptions.cs"/>
         <Compile Include="Extensions\PlayniteApiExtensions.cs"/>
         <Compile Include="Mappers\AbstractMapper.cs"/>

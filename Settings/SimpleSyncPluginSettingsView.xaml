@@ -31,9 +31,14 @@
             <StackPanel Orientation="Horizontal"
                         DockPanel.Dock="Top" Margin="0,15,5,0" HorizontalAlignment="Left">
                 <Button Content="{DynamicResource LOC_Yalgrin_SimpleSync_Settings_Register}"
-                        Command="{Binding RegisterCommand}" />
+                        Command="{Binding RegisterCommand}"
+                        Margin="5, 0, 0, 0" />
+                <Button Content="{DynamicResource LOC_Yalgrin_SimpleSync_Settings_ChangeName}"
+                        Command="{Binding ChangeNameCommand}"
+                        Margin="5, 0, 0, 0" />
                 <Button Content="{DynamicResource LOC_Yalgrin_SimpleSync_Settings_TestConnection}"
-                        Command="{Binding TestConnectionCommand}" />
+                        Command="{Binding TestConnectionCommand}"
+                        Margin="5, 0, 0, 0" />
             </StackPanel>
 
             <CheckBox DockPanel.Dock="Top" Name="SendLiveChanges"

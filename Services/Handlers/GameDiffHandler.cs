@@ -10,8 +10,6 @@ namespace SimpleSyncPlugin.Services.Handlers
 {
     public class GameDiffHandler : AbstractDiffChangeHandler<Game, GameDto, GameDiffDto>
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
-
         private readonly SyncBackendService _syncBackendService;
 
         public GameDiffHandler(IPlayniteAPI api, SyncBackendService syncBackendService,

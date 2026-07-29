@@ -12,6 +12,7 @@ using SimpleSyncPlugin.Exceptions;
 using SimpleSyncPlugin.Models;
 using SimpleSyncPlugin.Settings;
 using SimpleSyncPlugin.Threading;
+using static SimpleSyncPlugin.Commons.RestConstants;
 
 namespace SimpleSyncPlugin.Services
 {
@@ -53,10 +54,10 @@ namespace SimpleSyncPlugin.Services
 
             if (clientInfo != null)
             {
-                _httpClient.DefaultRequestHeaders.Add("X-Client-Id", clientInfo.ClientId);
-                _httpClient.DefaultRequestHeaders.Add("X-Client-Token", clientInfo.ClientToken);
-                _longTimeoutHttpClient.DefaultRequestHeaders.Add("X-Client-Id", clientInfo.ClientId);
-                _longTimeoutHttpClient.DefaultRequestHeaders.Add("X-Client-Token", clientInfo.ClientToken);
+                _httpClient.DefaultRequestHeaders.Add(HeaderClient, clientInfo.ClientId);
+                _httpClient.DefaultRequestHeaders.Add(HeaderClientToken, clientInfo.ClientToken);
+                _longTimeoutHttpClient.DefaultRequestHeaders.Add(HeaderClient, clientInfo.ClientId);
+                _longTimeoutHttpClient.DefaultRequestHeaders.Add(HeaderClientToken, clientInfo.ClientToken);
             }
 
             _shutdownCts = new CancellationTokenSource();
@@ -75,6 +76,13 @@ namespace SimpleSyncPlugin.Services
             };
             return DoJsonRequest<RegisteredClientDto>(HttpMethod.Post, "/api/client/register", cancellationToken,
                 request);
+        }
+
+        public Task ChangeName(string newName,
+            CancellationToken cancellationToken = default)
+        {
+            Logger.Debug($"Registering the current client to \"{newName}\"");
+            return DoJsonRequest(HttpMethod.Post, $"/api/client/change-name?newName={newName}", cancellationToken);
         }
 
         public Task<CheckResultDto> CheckConnection(CancellationToken cancellationToken = default)
@@ -459,7 +467,7 @@ namespace SimpleSyncPlugin.Services
             var sessionId = SessionManager.CurrentSession?.SessionId;
             if (sessionId != null)
             {
-                request.Headers.Add("X-Session-Id", sessionId);
+                request.Headers.Add(HeaderSession, sessionId);
             }
 
             if (bodyObject != null)
@@ -467,9 +475,13 @@ namespace SimpleSyncPlugin.Services
                 request.Content = CreateJsonContent(bodyObject);
             }
 
-            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_shutdownCts.Token, cancellationToken);
-            var mergedToken = linkedCts.Token;
-            var response = await _httpClient.SendAsync(request, mergedToken);
+            HttpResponseMessage response;
+            using (var linkedCts =
+                   CancellationTokenSource.CreateLinkedTokenSource(_shutdownCts.Token, cancellationToken))
+            {
+                response = await _httpClient.SendAsync(request, linkedCts.Token);
+            }
+
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
                 return null;
@@ -498,7 +510,7 @@ namespace SimpleSyncPlugin.Services
             var sessionId = SessionManager.CurrentSession?.SessionId;
             if (sessionId != null)
             {
-                request.Headers.Add("X-Session-Id", sessionId);
+                request.Headers.Add(HeaderSession, sessionId);
             }
 
             if (bodyObject != null)
@@ -506,11 +518,14 @@ namespace SimpleSyncPlugin.Services
                 request.Content = CreateJsonContent(bodyObject);
             }
 
-            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_shutdownCts.Token, cancellationToken);
-            CancellationToken mergedToken = linkedCts.Token;
-            var response =
-                await _longTimeoutHttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead,
-                    mergedToken);
+            HttpResponseMessage response;
+            using (var linkedCts =
+                   CancellationTokenSource.CreateLinkedTokenSource(_shutdownCts.Token, cancellationToken))
+            {
+                response = await _longTimeoutHttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead,
+                    linkedCts.Token);
+            }
+
             if (response.IsSuccessStatusCode)
             {
                 var stream = await response.Content.ReadAsStreamAsync();
@@ -533,7 +548,7 @@ namespace SimpleSyncPlugin.Services
             var sessionId = SessionManager.CurrentSession?.SessionId;
             if (sessionId != null)
             {
-                request.Headers.Add("X-Session-Id", sessionId);
+                request.Headers.Add(HeaderSession, sessionId);
             }
 
             if (bodyObject != null)
@@ -541,8 +556,13 @@ namespace SimpleSyncPlugin.Services
                 request.Content = CreateJsonContent(bodyObject);
             }
 
-            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_shutdownCts.Token, cancellationToken);
-            var response = await _httpClient.SendAsync(request, linkedCts.Token);
+            HttpResponseMessage response;
+            using (var linkedCts =
+                   CancellationTokenSource.CreateLinkedTokenSource(_shutdownCts.Token, cancellationToken))
+            {
+                response = await _httpClient.SendAsync(request, linkedCts.Token);
+            }
+
             if (response.IsSuccessStatusCode)
             {
                 return;
@@ -559,7 +579,7 @@ namespace SimpleSyncPlugin.Services
             var sessionId = SessionManager.CurrentSession?.SessionId;
             if (sessionId != null)
             {
-                request.Headers.Add("X-Session-Id", sessionId);
+                request.Headers.Add(HeaderSession, sessionId);
             }
 
             if (bodyObject != null)
@@ -567,8 +587,13 @@ namespace SimpleSyncPlugin.Services
                 request.Content = CreateJsonContent(bodyObject);
             }
 
-            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_shutdownCts.Token, cancellationToken);
-            var response = await _httpClient.SendAsync(request, linkedCts.Token);
+            HttpResponseMessage response;
+            using (var linkedCts =
+                   CancellationTokenSource.CreateLinkedTokenSource(_shutdownCts.Token, cancellationToken))
+            {
+                response = await _httpClient.SendAsync(request, linkedCts.Token);
+            }
+
             if (response.IsSuccessStatusCode)
             {
                 var result = await response.Content.ReadAsStringAsync();
@@ -586,7 +611,7 @@ namespace SimpleSyncPlugin.Services
             var sessionId = SessionManager.CurrentSession?.SessionId;
             if (sessionId != null)
             {
-                request.Headers.Add("X-Session-Id", sessionId);
+                request.Headers.Add(HeaderSession, sessionId);
             }
 
             if (content != null)
@@ -594,8 +619,13 @@ namespace SimpleSyncPlugin.Services
                 request.Content = content;
             }
 
-            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_shutdownCts.Token, cancellationToken);
-            var response = await _httpClient.SendAsync(request, linkedCts.Token);
+            HttpResponseMessage response;
+            using (var linkedCts =
+                   CancellationTokenSource.CreateLinkedTokenSource(_shutdownCts.Token, cancellationToken))
+            {
+                response = await _httpClient.SendAsync(request, linkedCts.Token);
+            }
+
             if (response.IsSuccessStatusCode)
             {
                 return;
@@ -629,7 +659,7 @@ namespace SimpleSyncPlugin.Services
             else if (response.StatusCode == HttpStatusCode.Unauthorized ||
                      response.StatusCode == HttpStatusCode.Forbidden)
             {
-                throw new AuthException(response.StatusCode.ToString());
+                throw new AuthException(error?.Message ?? "");
             }
 
             throw new HttpStatusException(response.StatusCode, error?.Message ?? "Unexpected error!");

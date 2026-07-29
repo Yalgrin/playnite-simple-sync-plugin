@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Windows.Controls;
 using Playnite.SDK;
 using Playnite.SDK.Events;
 using Playnite.SDK.Plugins;
+using SimpleSyncPlugin.Exceptions;
 using SimpleSyncPlugin.Models;
 using SimpleSyncPlugin.Services;
 using SimpleSyncPlugin.Settings;
@@ -65,14 +65,11 @@ namespace SimpleSyncPlugin
 
         private void CheckConnection()
         {
-            //TODO handle different exceptions differently
             ActivateProgressBag("LOC_Yalgrin_SimpleSync_Dialogs_CheckConnection",
                 progArgs =>
                 {
                     try
                     {
-                        //TODO remove
-                        Task.Delay(2000).GetAwaiter().GetResult();
                         var checkResultDto = SyncBackendService.CheckConnection().GetAwaiter().GetResult();
                         if (checkResultDto != null)
                         {
@@ -100,6 +97,25 @@ namespace SimpleSyncPlugin
                         {
                             Logger.Warn("No result returned. Is the sync server configured?");
                         }
+                    }
+                    catch (AuthException ex)
+                    {
+                        Logger.Error(ex, "Exception while checking the connection!");
+
+                        if (ex.Message == "AuthException.CLIENT_ALREADY_REGISTERED")
+                        {
+                            PlayniteApi.Dialogs.ShowErrorMessage(
+                                "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_ClientAlreadyConnected",
+                                "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_Error");
+                        }
+                        else
+                        {
+                            PlayniteApi.Dialogs.ShowErrorMessage(
+                                "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_AuthError",
+                                "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_Error");
+                        }
+
+                        Settings.MarkAsDisabled();
                     }
                     catch (Exception ex)
                     {
@@ -135,21 +151,25 @@ namespace SimpleSyncPlugin
         public override IEnumerable<MainMenuItem> GetMainMenuItems(GetMainMenuItemsArgs args)
         {
             yield return AddSyncOption("LOC_Yalgrin_SimpleSync_Menu_SyncAll",
-                progArgs => DataSynchronizationService.SyncAll(progArgs).Wait());
+                progArgs => DataSynchronizationService.SyncAll(progArgs).GetAwaiter().GetResult());
             yield return AddSyncOption("LOC_Yalgrin_SimpleSync_Menu_SyncFilteredGames",
-                progArgs => DataSynchronizationService.SyncGames(progArgs, GetFilteredGameIds()).Wait());
+                progArgs => DataSynchronizationService.SyncGames(progArgs, GetFilteredGameIds()).GetAwaiter()
+                    .GetResult());
             yield return AddSyncOption("LOC_Yalgrin_SimpleSync_Menu_SyncSelectedGames",
-                progArgs => DataSynchronizationService.SyncGames(progArgs, GetSelectedGameIds()).Wait());
+                progArgs => DataSynchronizationService.SyncGames(progArgs, GetSelectedGameIds()).GetAwaiter()
+                    .GetResult());
             yield return AddSeparator();
             yield return AddFetchOption("LOC_Yalgrin_SimpleSync_Menu_FetchAll",
-                progArgs => DataProcessingService.FetchAll(progArgs).Wait());
+                progArgs => DataProcessingService.FetchAll(progArgs).GetAwaiter().GetResult());
             yield return AddFetchOption("LOC_Yalgrin_SimpleSync_Menu_FetchFilteredGames",
-                progArgs => DataProcessingService.FetchGames(progArgs, GetFilteredRequestDto()).Wait());
+                progArgs => DataProcessingService.FetchGames(progArgs, GetFilteredRequestDto()).GetAwaiter()
+                    .GetResult());
             yield return AddFetchOption("LOC_Yalgrin_SimpleSync_Menu_FetchSelectedGames",
-                progArgs => DataProcessingService.FetchGames(progArgs, GetSelectedRequestDto()).Wait());
+                progArgs => DataProcessingService.FetchGames(progArgs, GetSelectedRequestDto()).GetAwaiter()
+                    .GetResult());
             yield return AddSeparator();
             yield return AddFetchOption("LOC_Yalgrin_SimpleSync_Menu_FetchRemainingChanges",
-                progArgs => DataProcessingService.FetchRemainingChanges(progArgs).Wait());
+                progArgs => DataProcessingService.FetchRemainingChanges(progArgs).GetAwaiter().GetResult());
         }
 
         private List<Guid> GetFilteredGameIds()

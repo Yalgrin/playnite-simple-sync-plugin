@@ -1,7 +1,9 @@
-﻿namespace SimpleSyncPlugin.Models
+﻿using Newtonsoft.Json;
+
+namespace SimpleSyncPlugin.Models
 {
     public class ErrorDto
     {
-        public string Message { get; set; }
+        [JsonProperty("message")] public string Message { get; set; }
     }
 }

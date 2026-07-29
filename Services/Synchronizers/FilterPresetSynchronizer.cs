@@ -38,7 +38,7 @@ namespace SimpleSyncPlugin.Services.Synchronizers
                                        newData.ShowInFullscreeQuickSelection);
         }
 
-        private bool HasSettingsChanged(FilterPresetSettings oldData, FilterPresetSettings newData)
+        private static bool HasSettingsChanged(FilterPresetSettings oldData, FilterPresetSettings newData)
         {
             return ((oldData == null) != (newData == null))
                    || (oldData != null && (
@@ -75,25 +75,27 @@ namespace SimpleSyncPlugin.Services.Synchronizers
                    ));
         }
 
-        private bool HasItemPropertiesChanged(StringFilterItemProperties oldData, StringFilterItemProperties newData)
+        private static bool HasItemPropertiesChanged(StringFilterItemProperties oldData,
+            StringFilterItemProperties newData)
         {
             return ((oldData == null) != (newData == null))
                    || (oldData != null && HasListChanged(oldData.Values, newData.Values));
         }
 
-        private bool HasItemPropertiesChanged(IdItemFilterItemProperties oldData, IdItemFilterItemProperties newData)
+        private static bool HasItemPropertiesChanged(IdItemFilterItemProperties oldData,
+            IdItemFilterItemProperties newData)
         {
             return ((oldData == null) != (newData == null))
                    || (oldData != null && (HasListChanged(oldData.Ids, newData.Ids) || oldData.Text != newData.Text));
         }
 
-        private bool HasItemPropertiesChanged(EnumFilterItemProperties oldData, EnumFilterItemProperties newData)
+        private static bool HasItemPropertiesChanged(EnumFilterItemProperties oldData, EnumFilterItemProperties newData)
         {
             return ((oldData == null) != (newData == null))
                    || (oldData != null && HasListChanged(oldData.Values, newData.Values));
         }
 
-        private bool HasListChanged<T>(List<T> oldDataValues, List<T> newDataValues)
+        private static bool HasListChanged<T>(List<T> oldDataValues, List<T> newDataValues)
         {
             var oldCount = oldDataValues?.Count ?? 0;
             var newCount = newDataValues?.Count ?? 0;

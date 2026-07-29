@@ -11,16 +11,13 @@ using SimpleSyncPlugin.Extensions;
 using SimpleSyncPlugin.Models;
 using SimpleSyncPlugin.Services;
 using SimpleSyncPlugin.Settings;
+using static SimpleSyncPlugin.Commons.MessageConstants;
 
 namespace SimpleSyncPlugin.Threading
 {
     public class ServerConnectionThread
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
-
-        private const string ClientErrorId = "Yalgrin-SimpleSyncPlugin-ClientError";
-        private const string HttpErrorId = "Yalgrin-SimpleSyncPlugin-HttpError";
-        private const string ForceFetchRequiredId = "Yalgrin-SimpleSyncPlugin-ForceFetchRequired";
 
         private readonly DataProcessingThread _dataProcessingThread;
         private readonly SyncBackendService _syncBackendService;
@@ -29,6 +26,7 @@ namespace SimpleSyncPlugin.Threading
         private readonly object _streamLock = new object();
 
         private CancellationTokenSource _shutdownCts;
+        private CancellationTokenSource _interruptCts;
         private Task _workerTask;
         private Stream _currentStream;
 
@@ -40,6 +38,8 @@ namespace SimpleSyncPlugin.Threading
             _syncBackendService = syncBackendService;
             _settings = settings;
             _api = playniteApi;
+
+            _settings.PropertyChanged += (sender, args) => { TriggerInterrupt(); };
         }
 
         public void Start()
@@ -58,30 +58,33 @@ namespace SimpleSyncPlugin.Threading
             {
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    await DoConnect(cancellationToken);
+                    await TryToConnect(cancellationToken);
                 }
             }, cancellationToken);
         }
 
-        private async Task DoConnect(CancellationToken cancellationToken)
+        private async Task TryToConnect(CancellationToken cancellationToken)
         {
             CancellationToken? clientToken = null;
+            CancellationTokenSource interruptTokenSource = null;
             try
             {
                 Logger.Trace("Initializing the connection...");
 
                 cancellationToken.ThrowIfCancellationRequested();
 
+                interruptTokenSource = GenerateNewInterruptSource();
+
                 var syncBackendClient = _syncBackendService.SyncBackendClient;
                 if (syncBackendClient == null || !_settings.Settings.SynchronizationEnabled)
                 {
-                    clientToken = syncBackendClient?.ShutdownToken;
+                    clientToken = MergeTokens(syncBackendClient?.ShutdownToken, interruptTokenSource.Token);
                     Logger.Trace("Synchronization is disabled, waiting...");
-                    await Task.Delay(10000, cancellationToken);
+                    await Task.Delay(60000, MergeTokens(cancellationToken, clientToken));
                     return;
                 }
 
-                clientToken = syncBackendClient?.ShutdownToken;
+                clientToken = MergeTokens(syncBackendClient.ShutdownToken, interruptTokenSource.Token);
 
                 await ConnectToStreamAndFetchMessages(syncBackendClient, cancellationToken);
             }
@@ -107,13 +110,14 @@ namespace SimpleSyncPlugin.Threading
                     CancellationToken token;
                     if (clientToken != null)
                     {
-                        token = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, clientToken.Value)
-                            .Token;
+                        token = MergeTokens(cancellationToken, clientToken.Value);
                     }
                     else
                     {
                         token = cancellationToken;
                     }
+
+                    token = MergeTokens(token, interruptTokenSource?.Token ?? CancellationToken.None);
 
                     await Task.Delay(5000, token);
                 }
@@ -122,8 +126,6 @@ namespace SimpleSyncPlugin.Threading
             {
                 SessionManager.CurrentSession = null;
             }
-
-            return;
         }
 
         private async Task ConnectToStreamAndFetchMessages(SyncBackendClient syncBackendClient,
@@ -176,14 +178,15 @@ namespace SimpleSyncPlugin.Threading
                         var truncMsg = message.Replace("data:", "");
 
                         var jObject = JObject.Parse(truncMsg);
-                        string messageType = (string)jObject["messageType"];
+                        var messageType = (string)jObject["messageType"];
 
                         switch (messageType)
                         {
                             case "INITIALIZATION":
                             {
                                 var obj = JsonConvert.DeserializeObject<InitializationMessage>(truncMsg);
-                                SessionManager.CurrentSession = new SessionInfo()
+                                Logger.Debug("Received initialization message. Settings the session.");
+                                SessionManager.CurrentSession = new SessionInfo
                                 {
                                     SessionId = obj.SessionId
                                 };
@@ -219,6 +222,20 @@ namespace SimpleSyncPlugin.Threading
             try
             {
                 return await syncBackendClient.Connect(_settings.Settings.LastProcessedId, cancellationToken);
+            }
+            catch (AuthException ex)
+            {
+                Logger.Error(ex, "Exception while checking the connection!");
+                await _api.MainView.UIDispatcher.InvokeAsync(() =>
+                {
+                    _api.Dialogs.ShowErrorMessage(
+                        ex.Message == "AuthException.CLIENT_ALREADY_REGISTERED"
+                            ? "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_ClientAlreadyConnected"
+                            : "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_AuthError",
+                        "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_PassiveAuthCaption");
+                });
+                _settings.MarkAsDisabled();
+                throw;
             }
             catch (HttpStatusException ex)
             {
@@ -265,6 +282,40 @@ namespace SimpleSyncPlugin.Threading
                 _currentStream?.Dispose();
                 _currentStream = null;
             }
+        }
+
+        private void TriggerInterrupt()
+        {
+            try
+            {
+                _interruptCts?.Cancel();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Failed to cancel token source!");
+            }
+        }
+
+        private CancellationTokenSource GenerateNewInterruptSource()
+        {
+            try
+            {
+                _interruptCts?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Failed to dispose token source!");
+            }
+
+            _interruptCts = new CancellationTokenSource();
+            return _interruptCts;
+        }
+
+        private static CancellationToken MergeTokens(CancellationToken? firstToken, CancellationToken? otherToken)
+        {
+            return CancellationTokenSource
+                .CreateLinkedTokenSource(firstToken ?? CancellationToken.None, otherToken ?? CancellationToken.None)
+                .Token;
         }
     }
 }

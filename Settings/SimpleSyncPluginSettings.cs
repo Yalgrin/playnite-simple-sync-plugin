@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
 using Playnite.SDK;
 using Playnite.SDK.Data;
+using SimpleSyncPlugin.Extensions;
 using SimpleSyncPlugin.Models;
 using SimpleSyncPlugin.Services;
 using SimpleSyncPlugin.Threading;
@@ -130,6 +131,7 @@ namespace SimpleSyncPlugin.Settings
 
         public ICommand TestConnectionCommand { get; private set; }
         public ICommand RegisterCommand { get; private set; }
+        public ICommand ChangeNameCommand { get; private set; }
 
 
         public SimpleSyncPluginSettingsViewModel(SimpleSyncPlugin plugin)
@@ -140,17 +142,8 @@ namespace SimpleSyncPlugin.Settings
 
             Settings = savedSettings ?? new SimpleSyncPluginSettings();
             ClientInfo = LoadAuthInfo() ?? new RegisteredClientInfo();
-            RegisterCommand = new RelayCommand(async () =>
-            {
-                try
-                {
-                    await ExecuteRegisterCommand();
-                }
-                catch (Exception e)
-                {
-                    Logger.Error(e, "Exception while registering!");
-                }
-            });
+            RegisterCommand = new RelayCommand(ExecuteRegisterCommand);
+            ChangeNameCommand = new RelayCommand(ExecuteChangeNameCommand);
             TestConnectionCommand = new RelayCommand(ExecuteTestConnectionCommand);
 
             SessionManager.CurrentSessionChanged += (sender, args) => { UpdateStatusMessage(); };
@@ -160,23 +153,26 @@ namespace SimpleSyncPlugin.Settings
 
         private void UpdateStatusMessage()
         {
-            string msg = "";
+            var msg = "";
             if (string.IsNullOrEmpty(ClientInfo.ClientId))
             {
-                msg = "Not registered. ";
+                msg = GetLocalizedString("LOC_Yalgrin_SimpleSync_Settings_NotRegistered");
             }
             else
             {
-                msg = $"Registered as: {ClientInfo.ClientName}. ";
+                msg = string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Settings_RegisteredAs"),
+                    ClientInfo.ClientName);
             }
+
+            msg += " ";
 
             if (SessionManager.CurrentSession?.SessionId != null)
             {
-                msg += "Session active.";
+                msg += GetLocalizedString("LOC_Yalgrin_SimpleSync_Settings_SessionExists");
             }
             else
             {
-                msg += "No session active.";
+                msg += GetLocalizedString("LOC_Yalgrin_SimpleSync_Settings_NoSession");
             }
 
             StatusMessage = msg;
@@ -245,46 +241,130 @@ namespace SimpleSyncPlugin.Settings
             }
         }
 
-        private async Task ExecuteRegisterCommand()
+        private void ExecuteRegisterCommand()
         {
             var api = _plugin.PlayniteApi;
-            //TODO
+            if (!string.IsNullOrEmpty(ClientInfo?.ClientId))
+            {
+                var messageBoxResult = api.Dialogs.ShowMessage(
+                    "LOC_Yalgrin_SimpleSync_Dialogs_Register_AlreadyRegistered",
+                    "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_Label",
+                    MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (messageBoxResult != MessageBoxResult.Yes)
+                {
+                    return;
+                }
+            }
+
             var result = api.Dialogs.SelectString("LOC_Yalgrin_SimpleSync_Dialogs_Register_EnterName",
-                "LOC_Yalgrin_SimpleSync_Dialogs_Register_Caption", Environment.MachineName);
+                "LOC_Yalgrin_SimpleSync_Dialogs_Register_Caption", ClientInfo?.ClientName ?? Environment.MachineName);
             if (!result.Result)
             {
                 return;
             }
 
             var stringResult = result.SelectedString;
-            if (!string.IsNullOrEmpty(stringResult))
+            if (string.IsNullOrEmpty(stringResult))
             {
-                var client = new SyncBackendClient(api, Settings.SyncServerAddress, null);
-                try
+                return;
+            }
+
+            var success = false;
+            api.Dialogs.ActivateGlobalProgress(async args =>
                 {
-                    var clientDto = await client.RegisterClient(new RegistrationRequestDto
-                        { DisplayName = stringResult });
-                    SaveAuthInfo(new RegisteredClientInfo
+                    var client = new SyncBackendClient(api, Settings.SyncServerAddress, null);
+                    try
                     {
-                        ClientId = clientDto.ClientId,
-                        ClientName = clientDto.DisplayName,
-                        ClientToken = clientDto.ClientToken
-                    });
-                }
-                catch (Exception ex)
+                        var clientDto = await client.RegisterClient(new RegistrationRequestDto
+                            { DisplayName = stringResult });
+                        SaveAuthInfo(new RegisteredClientInfo
+                        {
+                            ClientId = clientDto.ClientId,
+                            ClientName = clientDto.DisplayName,
+                            ClientToken = clientDto.ClientToken
+                        });
+                        success = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex, $"Failed to register client {stringResult}.");
+                        success = false;
+                    }
+                },
+                new GlobalProgressOptions("LOC_Yalgrin_SimpleSync_Dialogs_Register_Progress", true)
+                    { IsIndeterminate = true });
+            if (!success)
+            {
+                api.Dialogs.ShowErrorMessage("LOC_Yalgrin_SimpleSync_Dialogs_Register_Error",
+                    "LOC_Yalgrin_SimpleSync_Dialogs_Register_Caption");
+            }
+        }
+
+        private void ExecuteChangeNameCommand()
+        {
+            var api = _plugin.PlayniteApi;
+            if (string.IsNullOrEmpty(ClientInfo?.ClientId))
+            {
+                api.Dialogs.ShowErrorMessage("LOC_Yalgrin_SimpleSync_Dialogs_ChangeName_NotRegistered",
+                    "LOC_Yalgrin_SimpleSync_Dialogs_ChangeName_Caption");
+                return;
+            }
+
+            var result = api.Dialogs.SelectString("LOC_Yalgrin_SimpleSync_Dialogs_ChangeName_EnterName",
+                "LOC_Yalgrin_SimpleSync_Dialogs_ChangeName_Caption", ClientInfo?.ClientName ?? Environment.MachineName);
+            if (!result.Result)
+            {
+                return;
+            }
+
+            var stringResult = result.SelectedString;
+            if (string.IsNullOrEmpty(stringResult))
+            {
+                return;
+            }
+
+            var success = false;
+            api.Dialogs.ActivateGlobalProgress(async args =>
                 {
-                    Logger.Error(ex, $"Failed to register client {stringResult}.");
-                    api.Dialogs.ShowErrorMessage("LOC_Yalgrin_SimpleSync_Dialogs_Register_Error", ex.Message);
-                }
+                    var client = new SyncBackendClient(api, Settings.SyncServerAddress, ClientInfo);
+                    try
+                    {
+                        await client.ChangeName(stringResult);
+                        SaveAuthInfo(new RegisteredClientInfo
+                        {
+                            ClientId = ClientInfo.ClientId,
+                            ClientName = stringResult,
+                            ClientToken = ClientInfo.ClientToken
+                        });
+                        success = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex, $"Failed to change client name to {stringResult}.");
+                        success = false;
+                    }
+                },
+                new GlobalProgressOptions("LOC_Yalgrin_SimpleSync_Dialogs_ChangeName_Progress", true)
+                    { IsIndeterminate = true });
+            if (!success)
+            {
+                api.Dialogs.ShowErrorMessage("LOC_Yalgrin_SimpleSync_Dialogs_ChangeName_Error",
+                    "LOC_Yalgrin_SimpleSync_Dialogs_ChangeName_Caption");
             }
         }
 
 
         private void ExecuteTestConnectionCommand()
         {
-            //TODO
-            Logger.Info($"Testing connection to server {Settings.SyncServerAddress}...");
             var api = _plugin.PlayniteApi;
+            if (string.IsNullOrEmpty(ClientInfo?.ClientId))
+            {
+                api.Dialogs.ShowErrorMessage("LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_NotRegistered",
+                    "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_Label");
+                return;
+            }
+
+            Logger.Info($"Testing connection to server {Settings.SyncServerAddress}...");
             CheckResult? checkResult = null;
             api.Dialogs.ActivateGlobalProgress(async args =>
                 {
@@ -312,6 +392,11 @@ namespace SimpleSyncPlugin.Settings
                 api.Dialogs.ShowErrorMessage("LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_Error",
                     "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_Label");
             }
+        }
+
+        private string GetLocalizedString(string key)
+        {
+            return _plugin.PlayniteApi.GetLocalizedString(key);
         }
     }
 }

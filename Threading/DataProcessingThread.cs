@@ -43,7 +43,7 @@ namespace SimpleSyncPlugin.Threading
                             {
                                 LockForProcessing();
                                 var processTask = _service.ProcessChange(dto);
-                                processTask.Wait();
+                                processTask.GetAwaiter().GetResult();
                             }
                             finally
                             {

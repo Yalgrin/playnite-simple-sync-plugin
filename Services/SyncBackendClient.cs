@@ -20,7 +20,7 @@ namespace SimpleSyncPlugin.Services
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
 
-        private const int SupportedApiVersion = 1;
+        private const int SupportedApiVersion = 2;
 
         private readonly IPlayniteAPI _api;
         private readonly HttpClient _httpClient;

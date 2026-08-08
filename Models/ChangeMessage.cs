@@ -1,4 +1,6 @@
-﻿using Newtonsoft.Json;
+﻿using System.Runtime.Serialization;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace SimpleSyncPlugin.Models
 {
@@ -11,23 +13,39 @@ namespace SimpleSyncPlugin.Models
         [JsonProperty("forceFetch")] public bool ForceFetch { get; set; }
     }
 
+    [JsonConverter(typeof(StringEnumConverter))]
     public enum ObjectType
     {
-        Category,
-        Genre,
-        Platform,
-        PlatformDiff,
-        Company,
-        Feature,
-        Tag,
-        Series,
-        AgeRating,
-        Region,
-        Source,
+        [EnumMember(Value = "CATEGORY")] Category,
+
+        [EnumMember(Value = "GENRE")] Genre,
+
+        [EnumMember(Value = "PLATFORM")] Platform,
+
+        [EnumMember(Value = "PLATFORM_DIFF")] PlatformDiff,
+
+        [EnumMember(Value = "COMPANY")] Company,
+
+        [EnumMember(Value = "FEATURE")] Feature,
+
+        [EnumMember(Value = "TAG")] Tag,
+
+        [EnumMember(Value = "SERIES")] Series,
+
+        [EnumMember(Value = "AGE_RATING")] AgeRating,
+
+        [EnumMember(Value = "REGION")] Region,
+
+        [EnumMember(Value = "SOURCE")] Source,
+
+        [EnumMember(Value = "COMPLETION_STATUS")]
         CompletionStatus,
-        FilterPreset,
-        Game,
-        GameDiff
+
+        [EnumMember(Value = "FILTER_PRESET")] FilterPreset,
+
+        [EnumMember(Value = "GAME")] Game,
+
+        [EnumMember(Value = "GAME_DIFF")] GameDiff
     }
 
     public static class ObjectTypeExtension

@@ -1,10 +1,12 @@
 ﻿using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace SimpleSyncPlugin.Models
 {
     public abstract class AbstractDiffDto : AbstractDto
     {
-        public long BaseObjectId { get; set; }
-        public List<string> ChangedFields { get; set; }
+        [JsonProperty("baseObjectId")] public long BaseObjectId { get; set; }
+
+        [JsonProperty("changedFields")] public List<string> ChangedFields { get; set; }
     }
 }

@@ -1,11 +1,13 @@
-﻿namespace SimpleSyncPlugin.Models
+﻿using Newtonsoft.Json;
+
+namespace SimpleSyncPlugin.Models
 {
     public abstract class AbstractDto
     {
-        public string Id { get; set; }
+        [JsonProperty("id")] public string Id { get; set; }
 
-        public string Name { get; set; }
+        [JsonProperty("name")] public string Name { get; set; }
 
-        public bool Removed { get; set; }
+        [JsonProperty("isRemoved")] public bool Removed { get; set; }
     }
 }

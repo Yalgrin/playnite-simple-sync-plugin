@@ -1,7 +1,9 @@
-﻿namespace SimpleSyncPlugin.Models
+﻿using Newtonsoft.Json;
+
+namespace SimpleSyncPlugin.Models
 {
     public class RegionDto : AbstractDto
     {
-        public string SpecificationId { get; set; }
+        [JsonProperty("specificationId")] public string SpecificationId { get; set; }
     }
 }

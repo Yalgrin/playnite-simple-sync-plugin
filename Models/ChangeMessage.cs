@@ -10,7 +10,7 @@ namespace SimpleSyncPlugin.Models
         [JsonProperty("type")] public ObjectType Type { get; set; }
         [JsonProperty("clientId")] public string ClientId { get; set; }
         [JsonProperty("objectId")] public long ObjectId { get; set; }
-        [JsonProperty("forceFetch")] public bool ForceFetch { get; set; }
+        [JsonProperty("isForceFetch")] public bool ForceFetch { get; set; }
     }
 
     [JsonConverter(typeof(StringEnumConverter))]

@@ -56,17 +56,17 @@ namespace SimpleSyncPlugin.Models
 
     public class StringItemPropertiesDto
     {
-        public List<string> Values { get; set; }
+        [JsonProperty("values")] public List<string> Values { get; set; }
     }
 
     public class IdItemPropertiesDto
     {
-        public List<string> Ids { get; set; }
-        public string Text { get; set; }
+        [JsonProperty("ids")] public List<string> Ids { get; set; }
+        [JsonProperty("text")] public string Text { get; set; }
     }
 
     public class IntItemPropertiesDto
     {
-        public List<int> Values { get; set; }
+        [JsonProperty("values")] public List<int> Values { get; set; }
     }
 }

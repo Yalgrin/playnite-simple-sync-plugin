@@ -4,6 +4,7 @@ namespace SimpleSyncPlugin.Threading
 {
     public class SessionInfo
     {
+        public bool InvalidRegistration { get; set; }
         public string SessionId { get; set; }
     }
 

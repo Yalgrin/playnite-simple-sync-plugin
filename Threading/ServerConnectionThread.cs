@@ -124,7 +124,11 @@ namespace SimpleSyncPlugin.Threading
             }
             finally
             {
-                SessionManager.CurrentSession = null;
+                SessionManager.CurrentSession = new SessionInfo
+                {
+                    InvalidRegistration = SessionManager.CurrentSession?.InvalidRegistration ?? false,
+                    SessionId = null
+                };
             }
         }
 
@@ -188,6 +192,7 @@ namespace SimpleSyncPlugin.Threading
                                 Logger.Debug("Received initialization message. Settings the session.");
                                 SessionManager.CurrentSession = new SessionInfo
                                 {
+                                    InvalidRegistration = false,
                                     SessionId = obj.SessionId
                                 };
                                 break;
@@ -202,7 +207,11 @@ namespace SimpleSyncPlugin.Threading
                     }
                 }
 
-                SessionManager.CurrentSession = null;
+                SessionManager.CurrentSession = new SessionInfo
+                {
+                    InvalidRegistration = SessionManager.CurrentSession?.InvalidRegistration ?? false,
+                    SessionId = null
+                };
                 Logger.Trace("Stream has been terminated...");
             }
             finally
@@ -228,11 +237,29 @@ namespace SimpleSyncPlugin.Threading
                 Logger.Error(ex, "Exception while checking the connection!");
                 await _api.MainView.UIDispatcher.InvokeAsync(() =>
                 {
-                    _api.Dialogs.ShowErrorMessage(
-                        ex.Message == "AuthException.CLIENT_ALREADY_REGISTERED"
-                            ? "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_ClientAlreadyConnected"
-                            : "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_AuthError",
-                        "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_PassiveAuthCaption");
+                    switch (ex.Message)
+                    {
+                        case "AuthException.CLIENT_ALREADY_REGISTERED":
+                            _api.Dialogs.ShowErrorMessage(
+                                "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_ClientAlreadyConnected",
+                                "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_PassiveAuthCaption");
+                            break;
+                        case "AuthException.MISSING_REGISTRATION":
+                            _api.Dialogs.ShowErrorMessage(
+                                "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_MissingRegistration",
+                                "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_PassiveAuthCaption");
+                            break;
+                        case "AuthException.INVALID_CREDENTIALS":
+                            _api.Dialogs.ShowErrorMessage(
+                                "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_InvalidRegistration",
+                                "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_PassiveAuthCaption");
+                            break;
+                        default:
+                            _api.Dialogs.ShowErrorMessage(
+                                "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_AuthError",
+                                "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_PassiveAuthCaption");
+                            break;
+                    }
                 });
                 _settings.MarkAsDisabled();
                 throw;

@@ -107,7 +107,7 @@ namespace SimpleSyncPlugin.Services
                         {
                             try
                             {
-                                if (SessionManager.CurrentSession == null)
+                                if (SessionManager.CurrentSession?.SessionId == null)
                                 {
                                     return;
                                 }
@@ -147,7 +147,7 @@ namespace SimpleSyncPlugin.Services
                 await _lock.WaitAsync();
                 try
                 {
-                    if (SessionManager.CurrentSession == null)
+                    if (SessionManager.CurrentSession?.SessionId == null)
                     {
                         return;
                     }

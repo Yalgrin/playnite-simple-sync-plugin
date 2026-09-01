@@ -74,6 +74,20 @@ namespace SimpleSyncPlugin
                         if (checkResultDto != null)
                         {
                             Logger.Info($"Connection check successful, result {checkResultDto.Result}!");
+                            if (!string.IsNullOrEmpty(checkResultDto.DisplayClientName))
+                            {
+                                Settings.UpdateDisplayName(checkResultDto.DisplayClientName);
+                            }
+
+                            if (checkResultDto.RegistrationSpecified && !checkResultDto.RegistrationValid)
+                            {
+                                SessionManager.CurrentSession = new SessionInfo
+                                {
+                                    InvalidRegistration = true,
+                                    SessionId = SessionManager.CurrentSession?.SessionId
+                                };
+                            }
+
                             switch (checkResultDto.Result)
                             {
                                 case CheckResult.OutdatedClient:
@@ -106,6 +120,18 @@ namespace SimpleSyncPlugin
                         {
                             PlayniteApi.Dialogs.ShowErrorMessage(
                                 "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_ClientAlreadyConnected",
+                                "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_Error");
+                        }
+                        else if (ex.Message == "AuthException.MISSING_REGISTRATION")
+                        {
+                            PlayniteApi.Dialogs.ShowErrorMessage(
+                                "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_MissingRegistration",
+                                "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_Error");
+                        }
+                        else if (ex.Message == "AuthException.INVALID_REGISTRATION")
+                        {
+                            PlayniteApi.Dialogs.ShowErrorMessage(
+                                "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_InvalidRegistration",
                                 "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_Error");
                         }
                         else

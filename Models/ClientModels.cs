@@ -36,6 +36,13 @@ namespace SimpleSyncPlugin.Models
     public class CheckResultDto
     {
         [JsonProperty("result")] public CheckResult Result { get; set; }
+
+        [JsonProperty("registrationSpecified")]
+        public bool RegistrationSpecified { get; set; }
+
+        [JsonProperty("registrationValid")] public bool RegistrationValid { get; set; }
+        [JsonProperty("displayClientName")] public string DisplayClientName { get; set; }
+        [JsonProperty("sessionActive")] public bool SessionActive { get; set; }
     }
 
     public class RegisteredClientDto

@@ -156,23 +156,32 @@ namespace SimpleSyncPlugin.Settings
             var msg = "";
             if (string.IsNullOrEmpty(ClientInfo.ClientId))
             {
-                msg = GetLocalizedString("LOC_Yalgrin_SimpleSync_Settings_NotRegistered");
+                msg = "⚠️ " + GetLocalizedString("LOC_Yalgrin_SimpleSync_Settings_NotRegistered");
             }
             else
             {
-                msg = string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Settings_RegisteredAs"),
-                    ClientInfo.ClientName);
+                if (SessionManager.CurrentSession?.InvalidRegistration == true)
+                {
+                    msg = "❌ " + string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Settings_RegisteredAs"),
+                              ClientInfo.ClientName) + " " +
+                          GetLocalizedString("LOC_Yalgrin_SimpleSync_Settings_InvalidRegistration");
+                }
+                else
+                {
+                    msg = "✔️ " + string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Settings_RegisteredAs"),
+                        ClientInfo.ClientName);
+                }
             }
 
-            msg += " ";
+            msg += "\n";
 
             if (SessionManager.CurrentSession?.SessionId != null)
             {
-                msg += GetLocalizedString("LOC_Yalgrin_SimpleSync_Settings_SessionExists");
+                msg += "✔️ " + GetLocalizedString("LOC_Yalgrin_SimpleSync_Settings_SessionExists");
             }
             else
             {
-                msg += GetLocalizedString("LOC_Yalgrin_SimpleSync_Settings_NoSession");
+                msg += "⚠️ " + GetLocalizedString("LOC_Yalgrin_SimpleSync_Settings_NoSession");
             }
 
             StatusMessage = msg;
@@ -241,6 +250,19 @@ namespace SimpleSyncPlugin.Settings
             }
         }
 
+        public void UpdateDisplayName(string newName)
+        {
+            if (ClientInfo.ClientName != newName)
+            {
+                SaveAuthInfo(new RegisteredClientInfo
+                {
+                    ClientId = ClientInfo.ClientId,
+                    ClientName = newName,
+                    ClientToken = ClientInfo.ClientToken
+                });
+            }
+        }
+
         private void ExecuteRegisterCommand()
         {
             var api = _plugin.PlayniteApi;
@@ -256,8 +278,14 @@ namespace SimpleSyncPlugin.Settings
                 }
             }
 
+            var defaultClientName = ClientInfo?.ClientName;
+            if (string.IsNullOrEmpty(defaultClientName))
+            {
+                defaultClientName = Environment.MachineName;
+            }
+
             var result = api.Dialogs.SelectString("LOC_Yalgrin_SimpleSync_Dialogs_Register_EnterName",
-                "LOC_Yalgrin_SimpleSync_Dialogs_Register_Caption", ClientInfo?.ClientName ?? Environment.MachineName);
+                "LOC_Yalgrin_SimpleSync_Dialogs_Register_Caption", defaultClientName);
             if (!result.Result)
             {
                 return;
@@ -297,6 +325,11 @@ namespace SimpleSyncPlugin.Settings
             {
                 api.Dialogs.ShowErrorMessage("LOC_Yalgrin_SimpleSync_Dialogs_Register_Error",
                     "LOC_Yalgrin_SimpleSync_Dialogs_Register_Caption");
+            }
+            else
+            {
+                EndEdit();
+                BeginEdit();
             }
         }
 
@@ -351,28 +384,25 @@ namespace SimpleSyncPlugin.Settings
                 api.Dialogs.ShowErrorMessage("LOC_Yalgrin_SimpleSync_Dialogs_ChangeName_Error",
                     "LOC_Yalgrin_SimpleSync_Dialogs_ChangeName_Caption");
             }
+            else
+            {
+                EndEdit();
+                BeginEdit();
+            }
         }
 
 
         private void ExecuteTestConnectionCommand()
         {
             var api = _plugin.PlayniteApi;
-            if (string.IsNullOrEmpty(ClientInfo?.ClientId))
-            {
-                api.Dialogs.ShowErrorMessage("LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_NotRegistered",
-                    "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_Label");
-                return;
-            }
-
             Logger.Info($"Testing connection to server {Settings.SyncServerAddress}...");
-            CheckResult? checkResult = null;
+            CheckResultDto checkResult = null;
             api.Dialogs.ActivateGlobalProgress(async args =>
                 {
                     try
                     {
-                        var result = await new SyncBackendClient(api, Settings.SyncServerAddress, ClientInfo)
+                        checkResult = await new SyncBackendClient(api, Settings.SyncServerAddress, ClientInfo)
                             .CheckConnection();
-                        checkResult = result?.Result;
                     }
                     catch (Exception ex)
                     {
@@ -382,16 +412,97 @@ namespace SimpleSyncPlugin.Settings
                 },
                 new GlobalProgressOptions("LOC_Yalgrin_SimpleSync_Dialogs_TestConnection", true)
                     { IsIndeterminate = true });
-            if (checkResult != null && checkResult == CheckResult.Ok)
+            if (checkResult != null)
             {
-                api.Dialogs.ShowMessage("LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_Ok",
-                    "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_Label");
+                if (!string.IsNullOrEmpty(checkResult.DisplayClientName))
+                {
+                    UpdateDisplayName(checkResult.DisplayClientName);
+                }
+
+                var invalidRegistration = checkResult.RegistrationSpecified && !checkResult.RegistrationValid;
+                if (invalidRegistration)
+                {
+                    SessionManager.CurrentSession = new SessionInfo
+                    {
+                        InvalidRegistration = true,
+                        SessionId = SessionManager.CurrentSession?.SessionId
+                    };
+                }
+
+                var error = checkResult.Result != CheckResult.Ok || invalidRegistration;
+                var warning = !error && (!checkResult.RegistrationSpecified || !checkResult.SessionActive);
+                MessageBoxImage icon;
+                if (error)
+                {
+                    icon = MessageBoxImage.Error;
+                }
+                else if (warning)
+                {
+                    icon = MessageBoxImage.Warning;
+                }
+                else
+                {
+                    icon = MessageBoxImage.Information;
+                }
+
+                api.Dialogs.ShowMessage(FormatCheckConnectionMsg(checkResult),
+                    "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_Label", MessageBoxButton.OK, icon);
             }
             else
             {
-                api.Dialogs.ShowErrorMessage("LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_Error",
+                api.Dialogs.ShowErrorMessage("LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_ServerNotReachable",
                     "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_Label");
             }
+        }
+
+        private string FormatCheckConnectionMsg(CheckResultDto dto)
+        {
+            string msg = "";
+
+            if (dto.Result == CheckResult.OutdatedClient)
+            {
+                msg += GetLocalizedString(
+                    "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_ServerReachableOutdatedClient");
+            }
+            else if (dto.Result == CheckResult.OutdatedServer)
+            {
+                msg += GetLocalizedString(
+                    "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_ServerReachableOutdatedServer");
+            }
+            else
+            {
+                msg += GetLocalizedString("LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_ServerReachable");
+            }
+
+            msg += "\n\n";
+
+            if (!dto.RegistrationSpecified)
+            {
+                msg += GetLocalizedString("LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_NotRegisteredResponse");
+            }
+            else if (!dto.RegistrationValid)
+            {
+                msg += GetLocalizedString("LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_InvalidRegistrationResponse");
+            }
+            else if (!string.IsNullOrEmpty(dto.DisplayClientName))
+            {
+                msg += string.Format(
+                    GetLocalizedString("LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_ProperlyRegisteredAs"),
+                    ClientInfo.ClientName);
+            }
+
+            msg += "\n\n";
+
+            if (dto.SessionActive)
+            {
+                msg += GetLocalizedString("LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_SessionActive");
+            }
+            else
+            {
+                msg += GetLocalizedString("LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_SessionNotActive");
+            }
+
+            return msg;
         }
 
         private string GetLocalizedString(string key)

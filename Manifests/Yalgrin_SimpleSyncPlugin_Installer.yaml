@@ -30,3 +30,11 @@ Packages:
       - Technical - Adjusted most of the models to a new format.
       - Improvement - Connection check operation will give more detailed information about the connection status.
       - Improvement - Slightly reworded some of the error messages.
+  - Version: 0.3.1
+    RequiredApiVersion: 6.11.0
+    ReleaseDate: 2026-09-05
+    PackageUrl: https://github.com/Yalgrin/playnite-simple-sync-plugin/releases/download/0.3.1/Yagrin_SimpleSyncPlugin_0_3_1.pext
+    Changelog:
+      - Important! Requires update to Sync Server version 0.3.0 or higher.
+      - Fixed - Server connection thread was sometimes being stopped after changing settings.
+      - Improvement - Improved cancelling of specific operations.

@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Threading;
+using System.Threading.Tasks;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using SimpleSyncPlugin.Models;
@@ -23,16 +24,16 @@ namespace SimpleSyncPlugin.Services.Synchronizers
             return db.Regions;
         }
 
-        protected override Task SaveObject(Region entity)
+        protected override Task SaveObject(Region entity, CancellationToken cancellationToken = default)
         {
             Logger.Trace($"Saving region with id = {entity.Id}");
-            return _syncBackendService.SaveRegion(entity);
+            return _syncBackendService.SaveRegion(entity, cancellationToken);
         }
 
-        protected override Task DeleteObject(Region entity)
+        protected override Task DeleteObject(Region entity, CancellationToken cancellationToken = default)
         {
             Logger.Trace($"Deleting region with id = {entity.Id}");
-            return _syncBackendService.DeleteRegion(entity);
+            return _syncBackendService.DeleteRegion(entity, cancellationToken);
         }
 
         public override ObjectType GetHandledType()

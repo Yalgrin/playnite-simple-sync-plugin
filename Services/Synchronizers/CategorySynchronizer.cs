@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Threading;
+using System.Threading.Tasks;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using SimpleSyncPlugin.Models;
@@ -23,16 +24,16 @@ namespace SimpleSyncPlugin.Services.Synchronizers
             return db.Categories;
         }
 
-        protected override Task SaveObject(Category entity)
+        protected override Task SaveObject(Category entity, CancellationToken cancellationToken = default)
         {
             Logger.Trace($"Saving category with id = {entity.Id}");
-            return _syncBackendService.SaveCategory(entity);
+            return _syncBackendService.SaveCategory(entity, cancellationToken);
         }
 
-        protected override Task DeleteObject(Category entity)
+        protected override Task DeleteObject(Category entity, CancellationToken cancellationToken = default)
         {
             Logger.Trace($"Deleting category with id = {entity.Id}");
-            return _syncBackendService.DeleteCategory(entity);
+            return _syncBackendService.DeleteCategory(entity, cancellationToken);
         }
 
         public override ObjectType GetHandledType()

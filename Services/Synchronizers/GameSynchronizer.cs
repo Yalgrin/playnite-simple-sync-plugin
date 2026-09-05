@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Playnite.SDK;
 using Playnite.SDK.Models;
@@ -36,24 +37,25 @@ namespace SimpleSyncPlugin.Services.Synchronizers
                 .ToList();
         }
 
-        protected override Task SaveObject(Game entity)
+        protected override Task SaveObject(Game entity, CancellationToken cancellationToken = default)
         {
             Logger.Trace($"Saving game with id = {entity.Id}, gameId = {entity.GameId}, pluginId = {entity.PluginId}");
-            return _syncBackendService.SaveGame(entity);
+            return _syncBackendService.SaveGame(entity, cancellationToken);
         }
 
-        protected override Task SaveDiffObject(Game oldEntity, Game newEntity)
+        protected override Task SaveDiffObject(Game oldEntity, Game newEntity,
+            CancellationToken cancellationToken = default)
         {
             Logger.Trace(
                 $"Saving game diff with id = {newEntity.Id}, gameId = {newEntity.GameId}, pluginId = {newEntity.PluginId}");
-            return _syncBackendService.SaveGameDiff(oldEntity, newEntity);
+            return _syncBackendService.SaveGameDiff(oldEntity, newEntity, cancellationToken);
         }
 
-        protected override Task DeleteObject(Game entity)
+        protected override Task DeleteObject(Game entity, CancellationToken cancellationToken = default)
         {
             Logger.Trace(
                 $"Deleting game with id = {entity.Id}, gameId = {entity.GameId}, pluginId = {entity.PluginId}");
-            return _syncBackendService.DeleteGame(entity);
+            return _syncBackendService.DeleteGame(entity, cancellationToken);
         }
 
         public override ObjectType GetHandledType()

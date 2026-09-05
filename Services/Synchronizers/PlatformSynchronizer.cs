@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Threading;
+using System.Threading.Tasks;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using SimpleSyncPlugin.Models;
@@ -23,22 +24,23 @@ namespace SimpleSyncPlugin.Services.Synchronizers
             return db.Platforms;
         }
 
-        protected override Task SaveObject(Platform entity)
+        protected override Task SaveObject(Platform entity, CancellationToken cancellationToken = default)
         {
             Logger.Trace($"Saving platform with id = {entity.Id}");
-            return _syncBackendService.SavePlatform(entity);
+            return _syncBackendService.SavePlatform(entity, cancellationToken);
         }
 
-        protected override Task SaveDiffObject(Platform oldEntity, Platform newEntity)
+        protected override Task SaveDiffObject(Platform oldEntity, Platform newEntity,
+            CancellationToken cancellationToken = default)
         {
             Logger.Trace($"Saving platform diff with id = {newEntity.Id}");
-            return _syncBackendService.SavePlatformDiff(oldEntity, newEntity);
+            return _syncBackendService.SavePlatformDiff(oldEntity, newEntity, cancellationToken);
         }
 
-        protected override Task DeleteObject(Platform entity)
+        protected override Task DeleteObject(Platform entity, CancellationToken cancellationToken = default)
         {
             Logger.Trace($"Deleting platform with id = {entity.Id}");
-            return _syncBackendService.DeletePlatform(entity);
+            return _syncBackendService.DeletePlatform(entity, cancellationToken);
         }
 
         public override ObjectType GetHandledType()

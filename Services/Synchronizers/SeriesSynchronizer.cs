@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Threading;
+using System.Threading.Tasks;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using SimpleSyncPlugin.Models;
@@ -23,16 +24,16 @@ namespace SimpleSyncPlugin.Services.Synchronizers
             return db.Series;
         }
 
-        protected override Task SaveObject(Series entity)
+        protected override Task SaveObject(Series entity, CancellationToken cancellationToken = default)
         {
             Logger.Trace($"Saving series with id = {entity.Id}");
-            return _syncBackendService.SaveSeries(entity);
+            return _syncBackendService.SaveSeries(entity, cancellationToken);
         }
 
-        protected override Task DeleteObject(Series entity)
+        protected override Task DeleteObject(Series entity, CancellationToken cancellationToken = default)
         {
             Logger.Trace($"Deleting series with id = {entity.Id}");
-            return _syncBackendService.DeleteSeries(entity);
+            return _syncBackendService.DeleteSeries(entity, cancellationToken);
         }
 
         public override ObjectType GetHandledType()

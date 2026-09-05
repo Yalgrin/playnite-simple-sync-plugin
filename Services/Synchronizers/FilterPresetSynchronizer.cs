@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Playnite.SDK;
 using Playnite.SDK.Models;
@@ -103,16 +104,16 @@ namespace SimpleSyncPlugin.Services.Synchronizers
                                             oldDataValues.Any(newDataValues.Contains));
         }
 
-        protected override Task SaveObject(FilterPreset entity)
+        protected override Task SaveObject(FilterPreset entity, CancellationToken cancellationToken = default)
         {
             Logger.Trace($"Saving filter preset with id = {entity.Id}");
-            return _syncBackendService.SaveFilterPreset(entity);
+            return _syncBackendService.SaveFilterPreset(entity, cancellationToken);
         }
 
-        protected override Task DeleteObject(FilterPreset entity)
+        protected override Task DeleteObject(FilterPreset entity, CancellationToken cancellationToken = default)
         {
             Logger.Trace($"Deleting filter preset with id = {entity.Id}");
-            return _syncBackendService.DeleteFilterPreset(entity);
+            return _syncBackendService.DeleteFilterPreset(entity, cancellationToken);
         }
 
         public override ObjectType GetHandledType()

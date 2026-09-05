@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Playnite.SDK;
 using Playnite.SDK.Models;
@@ -128,9 +129,9 @@ namespace SimpleSyncPlugin.Services.Synchronizers
             return GetDatabaseCollection(db).OrderBy(o => o.Name).ToList();
         }
 
-        protected abstract Task SaveObject(TEntity entity);
+        protected abstract Task SaveObject(TEntity entity, CancellationToken cancellationToken = default);
 
-        protected abstract Task DeleteObject(TEntity entity);
+        protected abstract Task DeleteObject(TEntity entity, CancellationToken cancellationToken = default);
 
         protected virtual bool HasObjectChanged(ItemUpdateEvent<TEntity> args)
         {
@@ -163,7 +164,7 @@ namespace SimpleSyncPlugin.Services.Synchronizers
                 progArgs.Text = GetLocalizedString("LOC_Yalgrin_SimpleSync_Dialogs_Sync") + "\n" +
                                 GetLocalizedObjectName() + " - " + i + "/" + listCount + " - " + databaseObject.Name;
 
-                await SaveObject(databaseObject);
+                await SaveObject(databaseObject, progArgs.CancelToken);
                 progArgs.CurrentProgressValue++;
                 i++;
             }
@@ -188,7 +189,7 @@ namespace SimpleSyncPlugin.Services.Synchronizers
                                     GetLocalizedObjectName() + " - " + i + "/" + listCount + " - " +
                                     databaseObject.Name;
 
-                    await SaveObject(databaseObject);
+                    await SaveObject(databaseObject, progArgs.CancelToken);
                     progArgs.CurrentProgressValue++;
                     i++;
                 }

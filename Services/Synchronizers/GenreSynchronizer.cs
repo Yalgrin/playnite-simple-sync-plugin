@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Threading;
+using System.Threading.Tasks;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using SimpleSyncPlugin.Models;
@@ -23,16 +24,16 @@ namespace SimpleSyncPlugin.Services.Synchronizers
             return db.Genres;
         }
 
-        protected override Task SaveObject(Genre entity)
+        protected override Task SaveObject(Genre entity, CancellationToken cancellationToken = default)
         {
             Logger.Trace($"Saving genre with id = {entity.Id}");
-            return _syncBackendService.SaveGenre(entity);
+            return _syncBackendService.SaveGenre(entity, cancellationToken);
         }
 
-        protected override Task DeleteObject(Genre entity)
+        protected override Task DeleteObject(Genre entity, CancellationToken cancellationToken = default)
         {
             Logger.Trace($"Deleting genre with id = {entity.Id}");
-            return _syncBackendService.DeleteGenre(entity);
+            return _syncBackendService.DeleteGenre(entity, cancellationToken);
         }
 
         public override ObjectType GetHandledType()

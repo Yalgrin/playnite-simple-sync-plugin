@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Threading;
+using System.Threading.Tasks;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using SimpleSyncPlugin.Models;
@@ -23,16 +24,16 @@ namespace SimpleSyncPlugin.Services.Synchronizers
             return db.Tags;
         }
 
-        protected override Task SaveObject(Tag entity)
+        protected override Task SaveObject(Tag entity, CancellationToken cancellationToken = default)
         {
             Logger.Trace($"Saving tag with id = {entity.Id}");
-            return _syncBackendService.SaveTag(entity);
+            return _syncBackendService.SaveTag(entity, cancellationToken);
         }
 
-        protected override Task DeleteObject(Tag entity)
+        protected override Task DeleteObject(Tag entity, CancellationToken cancellationToken = default)
         {
             Logger.Trace($"Deleting tag with id = {entity.Id}");
-            return _syncBackendService.DeleteTag(entity);
+            return _syncBackendService.DeleteTag(entity, cancellationToken);
         }
 
         public override ObjectType GetHandledType()

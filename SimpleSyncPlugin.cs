@@ -70,7 +70,8 @@ namespace SimpleSyncPlugin
                 {
                     try
                     {
-                        var checkResultDto = SyncBackendService.CheckConnection().GetAwaiter().GetResult();
+                        var checkResultDto = SyncBackendService.CheckConnection(progArgs.CancelToken).GetAwaiter()
+                            .GetResult();
                         if (checkResultDto != null)
                         {
                             Logger.Info($"Connection check successful, result {checkResultDto.Result}!");

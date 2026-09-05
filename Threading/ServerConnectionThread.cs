@@ -119,7 +119,14 @@ namespace SimpleSyncPlugin.Threading
 
                     token = MergeTokens(token, interruptTokenSource?.Token ?? CancellationToken.None);
 
-                    await Task.Delay(5000, token);
+                    try
+                    {
+                        await Task.Delay(5000, token);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        Logger.Trace("Retry delay was canceled.");
+                    }
                 }
             }
             finally

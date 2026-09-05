@@ -297,6 +297,7 @@ namespace SimpleSyncPlugin.Settings
                 return;
             }
 
+            var cancelled = false;
             var success = false;
             api.Dialogs.ActivateGlobalProgress(async args =>
                 {
@@ -304,7 +305,7 @@ namespace SimpleSyncPlugin.Settings
                     try
                     {
                         var clientDto = await client.RegisterClient(new RegistrationRequestDto
-                            { DisplayName = stringResult });
+                            { DisplayName = stringResult }, args.CancelToken);
                         SaveAuthInfo(new RegisteredClientInfo
                         {
                             ClientId = clientDto.ClientId,
@@ -312,6 +313,11 @@ namespace SimpleSyncPlugin.Settings
                             ClientToken = clientDto.ClientToken
                         });
                         success = true;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        cancelled = true;
+                        throw;
                     }
                     catch (Exception ex)
                     {
@@ -321,6 +327,12 @@ namespace SimpleSyncPlugin.Settings
                 },
                 new GlobalProgressOptions("LOC_Yalgrin_SimpleSync_Dialogs_Register_Progress", true)
                     { IsIndeterminate = true });
+
+            if (cancelled)
+            {
+                return;
+            }
+
             if (!success)
             {
                 api.Dialogs.ShowErrorMessage("LOC_Yalgrin_SimpleSync_Dialogs_Register_Error",
@@ -356,13 +368,14 @@ namespace SimpleSyncPlugin.Settings
                 return;
             }
 
+            var cancelled = false;
             var success = false;
             api.Dialogs.ActivateGlobalProgress(async args =>
                 {
                     var client = new SyncBackendClient(api, Settings.SyncServerAddress, ClientInfo);
                     try
                     {
-                        await client.ChangeName(stringResult);
+                        await client.ChangeName(stringResult, args.CancelToken);
                         SaveAuthInfo(new RegisteredClientInfo
                         {
                             ClientId = ClientInfo.ClientId,
@@ -370,6 +383,11 @@ namespace SimpleSyncPlugin.Settings
                             ClientToken = ClientInfo.ClientToken
                         });
                         success = true;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        cancelled = true;
+                        throw;
                     }
                     catch (Exception ex)
                     {
@@ -379,6 +397,12 @@ namespace SimpleSyncPlugin.Settings
                 },
                 new GlobalProgressOptions("LOC_Yalgrin_SimpleSync_Dialogs_ChangeName_Progress", true)
                     { IsIndeterminate = true });
+
+            if (cancelled)
+            {
+                return;
+            }
+
             if (!success)
             {
                 api.Dialogs.ShowErrorMessage("LOC_Yalgrin_SimpleSync_Dialogs_ChangeName_Error",
@@ -396,13 +420,19 @@ namespace SimpleSyncPlugin.Settings
         {
             var api = _plugin.PlayniteApi;
             Logger.Info($"Testing connection to server {Settings.SyncServerAddress}...");
+            var cancelled = false;
             CheckResultDto checkResult = null;
             api.Dialogs.ActivateGlobalProgress(async args =>
                 {
                     try
                     {
                         checkResult = await new SyncBackendClient(api, Settings.SyncServerAddress, ClientInfo)
-                            .CheckConnection();
+                            .CheckConnection(args.CancelToken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        cancelled = true;
+                        throw;
                     }
                     catch (Exception ex)
                     {
@@ -412,6 +442,12 @@ namespace SimpleSyncPlugin.Settings
                 },
                 new GlobalProgressOptions("LOC_Yalgrin_SimpleSync_Dialogs_TestConnection", true)
                     { IsIndeterminate = true });
+
+            if (cancelled)
+            {
+                return;
+            }
+
             if (checkResult != null)
             {
                 if (!string.IsNullOrEmpty(checkResult.DisplayClientName))

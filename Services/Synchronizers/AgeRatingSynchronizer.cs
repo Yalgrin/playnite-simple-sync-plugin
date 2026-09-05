@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Threading;
+using System.Threading.Tasks;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using SimpleSyncPlugin.Models;
@@ -23,16 +24,16 @@ namespace SimpleSyncPlugin.Services.Synchronizers
             return db.AgeRatings;
         }
 
-        protected override Task SaveObject(AgeRating entity)
+        protected override Task SaveObject(AgeRating entity, CancellationToken cancellationToken = default)
         {
             Logger.Trace($"Saving age rating with id = {entity.Id}");
-            return _syncBackendService.SaveAgeRating(entity);
+            return _syncBackendService.SaveAgeRating(entity, cancellationToken);
         }
 
-        protected override Task DeleteObject(AgeRating entity)
+        protected override Task DeleteObject(AgeRating entity, CancellationToken cancellationToken = default)
         {
             Logger.Trace($"Deleting age rating with id = {entity.Id}");
-            return _syncBackendService.DeleteAgeRating(entity);
+            return _syncBackendService.DeleteAgeRating(entity, cancellationToken);
         }
 
         public override ObjectType GetHandledType()

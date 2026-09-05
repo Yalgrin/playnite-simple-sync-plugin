@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Threading;
+using System.Threading.Tasks;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using SimpleSyncPlugin.Models;
@@ -23,16 +24,16 @@ namespace SimpleSyncPlugin.Services.Synchronizers
             return db.CompletionStatuses;
         }
 
-        protected override Task SaveObject(CompletionStatus entity)
+        protected override Task SaveObject(CompletionStatus entity, CancellationToken cancellationToken = default)
         {
             Logger.Trace($"Saving completion status with id = {entity.Id}");
-            return _syncBackendService.SaveCompletionStatus(entity);
+            return _syncBackendService.SaveCompletionStatus(entity, cancellationToken);
         }
 
-        protected override Task DeleteObject(CompletionStatus entity)
+        protected override Task DeleteObject(CompletionStatus entity, CancellationToken cancellationToken = default)
         {
             Logger.Trace($"Deleting completion status with id = {entity.Id}");
-            return _syncBackendService.DeleteCompletionStatus(entity);
+            return _syncBackendService.DeleteCompletionStatus(entity, cancellationToken);
         }
 
         public override ObjectType GetHandledType()

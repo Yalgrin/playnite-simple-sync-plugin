@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Playnite.SDK;
 using Playnite.SDK.Models;
@@ -100,6 +101,7 @@ namespace SimpleSyncPlugin.Services.Synchronizers
             };
         }
 
-        protected abstract Task SaveDiffObject(TEntity oldEntity, TEntity newEntity);
+        protected abstract Task SaveDiffObject(TEntity oldEntity, TEntity newEntity,
+            CancellationToken cancellationToken = default);
     }
 }

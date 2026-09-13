@@ -45,7 +45,9 @@ namespace SimpleSyncPlugin.Models
 
         [EnumMember(Value = "GAME")] Game,
 
-        [EnumMember(Value = "GAME_DIFF")] GameDiff
+        [EnumMember(Value = "GAME_DIFF")] GameDiff,
+        [EnumMember(Value = "LIBRARY")] LibraryPlugin,
+        [EnumMember(Value = "LIBRARY_DIFF")] LibraryPluginDiff,
     }
 
     public static class ObjectTypeExtension
@@ -58,6 +60,8 @@ namespace SimpleSyncPlugin.Models
                     return ObjectType.Platform;
                 case ObjectType.GameDiff:
                     return ObjectType.Game;
+                case ObjectType.LibraryPluginDiff:
+                    return ObjectType.LibraryPlugin;
                 default:
                     return type;
             }

@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Playnite.SDK;
 using Playnite.SDK.Models;
+using Playnite.SDK.Plugins;
 using SimpleSyncPlugin.Exceptions;
 using SimpleSyncPlugin.Extensions;
 using SimpleSyncPlugin.Mappers;
@@ -22,6 +23,7 @@ namespace SimpleSyncPlugin.Services
         private readonly SimpleSyncPluginSettingsViewModel _settingsViewModel;
         private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
 
+        private readonly LibraryPluginMapper _libraryPluginMapper;
         private readonly CategoryMapper _categoryMapper;
         private readonly GenreMapper _genreMapper;
         private readonly PlatformMapper _platformMapper;
@@ -45,6 +47,7 @@ namespace SimpleSyncPlugin.Services
         {
             _settingsViewModel = settingsViewModel;
 
+            _libraryPluginMapper = new LibraryPluginMapper();
             _categoryMapper = new CategoryMapper();
             _genreMapper = new GenreMapper();
             _platformMapper = new PlatformMapper();
@@ -182,6 +185,16 @@ namespace SimpleSyncPlugin.Services
             }
 
             return HandleRequest(SyncBackendClient.CheckConnection(cancellationToken));
+        }
+
+        public async Task SaveLibraryPlugin(LibraryPlugin libraryPlugin, CancellationToken cancellationToken = default)
+        {
+            var dto = _libraryPluginMapper.ToDto(libraryPlugin);
+            if (SyncBackendClient != null)
+            {
+                await HandleRequest(SyncBackendClient.SaveLibraryPlugin(dto,
+                    libraryPlugin.LibraryIcon, libraryPlugin.LibraryBackground, cancellationToken));
+            }
         }
 
         public async Task SaveCategory(Category category, CancellationToken cancellationToken = default)

@@ -15,6 +15,7 @@ namespace SimpleSyncPlugin.Models
         [JsonProperty("sortingName")] public string SortingName { get; set; }
         [JsonProperty("gameId")] public string GameId { get; set; }
         [JsonProperty("pluginId")] public string PluginId { get; set; }
+        [JsonProperty("pluginName")] public string PluginName { get; set; }
         [JsonProperty("platforms")] public List<PlatformDto> Platforms { get; set; }
         [JsonProperty("publishers")] public List<CompanyDto> Publishers { get; set; }
         [JsonProperty("developers")] public List<CompanyDto> Developers { get; set; }
@@ -56,6 +57,7 @@ namespace SimpleSyncPlugin.Models
         [JsonProperty("sortingName")] public string SortingName { get; set; }
         [JsonProperty("gameId")] public string GameId { get; set; }
         [JsonProperty("pluginId")] public string PluginId { get; set; }
+        [JsonProperty("pluginName")] public string PluginName { get; set; }
         [JsonProperty("platforms")] public List<PlatformDto> Platforms { get; set; }
         [JsonProperty("publishers")] public List<CompanyDto> Publishers { get; set; }
         [JsonProperty("developers")] public List<CompanyDto> Developers { get; set; }

@@ -25,6 +25,7 @@ Extension data is NOT synced across devices.
 
 You might also be asked to manually update default completion statuses in additional instances. Check notifications for when that's needed.</sys:String>
 
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_ObjectType_LibraryPlugin">Library plugin</sys:String>
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_ObjectType_Category">Category</sys:String>
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_ObjectType_Genre">Genre</sys:String>
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_ObjectType_Platform">Platform</sys:String>

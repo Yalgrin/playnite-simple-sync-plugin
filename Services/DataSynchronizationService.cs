@@ -33,6 +33,7 @@ namespace SimpleSyncPlugin.Services
         {
             return new List<IObjectSynchronizer>
             {
+                new LibraryPluginSynchronizer(_api, _syncBackendService),
                 new CategorySynchronizer(_api, _settingsViewModel, _syncBackendService),
                 new GenreSynchronizer(_api, _settingsViewModel, _syncBackendService),
                 new PlatformSynchronizer(_api, _settingsViewModel, _syncBackendService),

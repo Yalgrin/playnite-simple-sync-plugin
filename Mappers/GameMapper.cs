@@ -4,6 +4,8 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using Playnite.SDK;
 using Playnite.SDK.Models;
+using Playnite.SDK.Plugins;
+using SimpleSyncPlugin.Commons;
 using SimpleSyncPlugin.Models;
 
 namespace SimpleSyncPlugin.Mappers
@@ -189,6 +191,7 @@ namespace SimpleSyncPlugin.Mappers
                 SortingName = entity.SortingName,
                 GameId = entity.GameId,
                 PluginId = entity.PluginId.ToString(),
+                PluginName = GetPluginName(entity.PluginId),
                 Platforms = entity.Platforms?.Select(g => _platformMapper.ToDto(g)).ToList(),
                 Publishers = entity.Publishers?.Select(g => _companyMapper.ToDto(g)).ToList(),
                 Developers = entity.Developers?.Select(g => _companyMapper.ToDto(g)).ToList(),
@@ -223,6 +226,18 @@ namespace SimpleSyncPlugin.Mappers
                 HasCoverImage = entity.CoverImage != null,
                 HasBackgroundImage = entity.BackgroundImage != null
             };
+        }
+
+        private string GetPluginName(Guid pluginId)
+        {
+            if (pluginId == Guid.Empty)
+            {
+                return Constants.PlaynitePluginName;
+            }
+
+            var matchingPlugins = _api.Addons.Plugins.Where(p => p.Id == pluginId && p is LibraryPlugin)
+                .Select(p => p as LibraryPlugin).ToList();
+            return matchingPlugins.Count > 0 ? matchingPlugins[0].Name : "";
         }
     }
 }

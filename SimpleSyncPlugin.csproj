@@ -57,6 +57,7 @@
         <Reference Include="WindowsBase"/>
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="Commons\Constants.cs"/>
         <Compile Include="Commons\MessageConstants.cs"/>
         <Compile Include="Commons\RestConstants.cs"/>
         <Compile Include="Exceptions\Exceptions.cs"/>
@@ -71,6 +72,7 @@
         <Compile Include="Mappers\GameDiffMapper.cs"/>
         <Compile Include="Mappers\GameMapper.cs"/>
         <Compile Include="Mappers\GenreMapper.cs"/>
+        <Compile Include="Mappers\LibraryPluginMapper.cs"/>
         <Compile Include="Mappers\PlatformDiffMapper.cs"/>
         <Compile Include="Mappers\PlatformMapper.cs"/>
         <Compile Include="Mappers\RegionMapper.cs"/>
@@ -91,6 +93,7 @@
         <Compile Include="Models\GameChangeRequestDto.cs"/>
         <Compile Include="Models\GameDto.cs"/>
         <Compile Include="Models\GenreDto.cs"/>
+        <Compile Include="Models\LibraryPluginDto.cs"/>
         <Compile Include="Models\PlatformDto.cs"/>
         <Compile Include="Models\RegionDto.cs"/>
         <Compile Include="Models\SeriesDto.cs"/>
@@ -129,6 +132,7 @@
         <Compile Include="Services\Synchronizers\GameSynchronizer.cs"/>
         <Compile Include="Services\Synchronizers\GenreSynchronizer.cs"/>
         <Compile Include="Services\Synchronizers\IObjectSynchronizer.cs"/>
+        <Compile Include="Services\Synchronizers\LibraryPluginSynchronizer.cs"/>
         <Compile Include="Services\Synchronizers\PlatformSynchronizer.cs"/>
         <Compile Include="Services\Synchronizers\RegionSynchronizer.cs"/>
         <Compile Include="Services\Synchronizers\SeriesSynchronizer.cs"/>

@@ -20,7 +20,7 @@ namespace SimpleSyncPlugin.Services
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
 
-        private const int SupportedApiVersion = 2;
+        private const int SupportedApiVersion = 3;
 
         private readonly IPlayniteAPI _api;
         private readonly HttpClient _httpClient;
@@ -103,6 +103,12 @@ namespace SimpleSyncPlugin.Services
         {
             Logger.Debug("Disabling change stream...");
             return DoJsonRequest(HttpMethod.Post, "/api/client/disable-change-stream", cancellationToken);
+        }
+
+        public Task SaveLibraryPlugin(LibraryPluginDto dto, string icon, string backgroundImage,
+            CancellationToken cancellationToken = default)
+        {
+            return SaveObjectWithMetadata(dto, "library-plugin", icon, null, backgroundImage, cancellationToken);
         }
 
         public Task<CategoryDto> GetCategory(long id, CancellationToken cancellationToken = default)

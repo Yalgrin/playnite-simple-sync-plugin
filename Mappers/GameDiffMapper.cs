@@ -4,6 +4,8 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using Playnite.SDK;
 using Playnite.SDK.Models;
+using Playnite.SDK.Plugins;
+using SimpleSyncPlugin.Commons;
 using SimpleSyncPlugin.Models;
 
 namespace SimpleSyncPlugin.Mappers
@@ -309,6 +311,7 @@ namespace SimpleSyncPlugin.Mappers
                 Name = newGame.Name,
                 GameId = newGame.GameId,
                 PluginId = newGame.PluginId.ToString(),
+                PluginName = GetPluginName(newGame.PluginId),
                 ChangedFields = new List<string>()
             };
             if (oldGame.Id != newGame.Id)
@@ -595,6 +598,18 @@ namespace SimpleSyncPlugin.Mappers
             }
 
             return false;
+        }
+
+        private string GetPluginName(Guid pluginId)
+        {
+            if (pluginId == Guid.Empty)
+            {
+                return Constants.PlaynitePluginName;
+            }
+
+            var matchingPlugins = _api.Addons.Plugins.Where(p => p.Id == pluginId && p is LibraryPlugin)
+                .Select(p => p as LibraryPlugin).ToList();
+            return matchingPlugins.Count > 0 ? matchingPlugins[0].Name : "";
         }
     }
 }

@@ -43,13 +43,13 @@ namespace SimpleSyncPlugin.Services
             _httpClient = new HttpClient
             {
                 BaseAddress = baseAddress,
-                Timeout = TimeSpan.FromSeconds(20)
+                Timeout = TimeSpan.FromSeconds(60)
             };
 
             _longTimeoutHttpClient = new HttpClient
             {
                 BaseAddress = baseAddress,
-                Timeout = TimeSpan.FromMinutes(60)
+                Timeout = TimeSpan.FromMinutes(300)
             };
 
             if (clientInfo != null)

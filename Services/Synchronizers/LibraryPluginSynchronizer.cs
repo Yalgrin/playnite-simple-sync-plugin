@@ -124,6 +124,7 @@ namespace SimpleSyncPlugin.Services.Synchronizers
         }
     }
 
+    [IgnorePlugin]
     internal class FakePlayniteLibraryPlugin : LibraryPlugin
     {
         public override string Name => Constants.PlaynitePluginName;

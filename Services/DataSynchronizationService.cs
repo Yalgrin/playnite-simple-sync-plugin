@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Playnite.SDK;
+using Playnite.SDK.Models;
 using SimpleSyncPlugin.Models;
 using SimpleSyncPlugin.Services.Synchronizers;
 using SimpleSyncPlugin.Settings;
@@ -39,7 +40,7 @@ namespace SimpleSyncPlugin.Services
         {
             return new List<IObjectSynchronizer>
             {
-                new LibraryPluginSynchronizer(_api, _syncBackendService, dataProcessingBroker, dataProcessingService),
+                new LibraryPluginSynchronizer(_api, _syncBackendService),
                 new CategorySynchronizer(_api, _settingsViewModel, dataProcessingBroker, dataProcessingService,
                     _syncBackendService),
                 new GenreSynchronizer(_api, _settingsViewModel, dataProcessingBroker, dataProcessingService,
@@ -147,7 +148,8 @@ namespace SimpleSyncPlugin.Services
 
         public Task SaveObject(ObjectType objectType, object entity)
         {
-            if (_objectSynchronizers.TryGetValue(objectType.GetBaseObjectType(), out var synchronizer))
+            if (_objectSynchronizers.TryGetValue(objectType.GetBaseObjectType(), out var synchronizer) &&
+                synchronizer.IsNotInGracePeriod(((DatabaseObject)entity).Id))
             {
                 return synchronizer.SaveObject(entity);
             }
@@ -157,7 +159,8 @@ namespace SimpleSyncPlugin.Services
 
         public Task SaveObjectById(ObjectType objectType, Guid id)
         {
-            if (_objectSynchronizers.TryGetValue(objectType.GetBaseObjectType(), out var synchronizer))
+            if (_objectSynchronizers.TryGetValue(objectType.GetBaseObjectType(), out var synchronizer) &&
+                synchronizer.IsNotInGracePeriod(id))
             {
                 return synchronizer.SaveObjectById(id);
             }
@@ -167,7 +170,8 @@ namespace SimpleSyncPlugin.Services
 
         public Task SaveObjectDiff(ObjectType objectType, object oldEntity, object newEntity)
         {
-            if (_objectSynchronizers.TryGetValue(objectType.GetBaseObjectType(), out var synchronizer))
+            if (_objectSynchronizers.TryGetValue(objectType.GetBaseObjectType(), out var synchronizer) &&
+                synchronizer.IsNotInGracePeriod(((DatabaseObject)newEntity).Id))
             {
                 return synchronizer.SaveDiffObject(oldEntity, newEntity);
             }
@@ -177,7 +181,8 @@ namespace SimpleSyncPlugin.Services
 
         public Task DeleteObject(ObjectType objectType, object entity)
         {
-            if (_objectSynchronizers.TryGetValue(objectType.GetBaseObjectType(), out var synchronizer))
+            if (_objectSynchronizers.TryGetValue(objectType.GetBaseObjectType(), out var synchronizer) &&
+                synchronizer.IsNotInGracePeriod(((DatabaseObject)entity).Id))
             {
                 return synchronizer.DeleteObject(entity);
             }

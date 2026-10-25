@@ -45,7 +45,7 @@ namespace SimpleSyncPlugin.Threading
                 _saveEntityQueue[type].Enqueue(new SaveEntityData { Entity = entity });
             }
 
-            EnqueueSendOperation<T>(type);
+            EnqueueSendOperation(type);
         }
 
         public void SubmitObjectSaveList<T>(ObjectType type, List<T> entities) where T : DatabaseObject
@@ -58,7 +58,7 @@ namespace SimpleSyncPlugin.Threading
                 }
             }
 
-            EnqueueSendOperation<T>(type);
+            EnqueueSendOperation(type);
         }
 
         public void SubmitObjectSaveDiff<T>(ObjectType type, T oldEntity, T newEntity) where T : DatabaseObject
@@ -68,7 +68,7 @@ namespace SimpleSyncPlugin.Threading
                 _saveEntityQueue[type].Enqueue(new SaveEntityDiffData { OldEntity = oldEntity, Entity = newEntity });
             }
 
-            EnqueueSendOperation<T>(type);
+            EnqueueSendOperation(type);
         }
 
         public void SubmitObjectDelete<T>(ObjectType type, T entity) where T : DatabaseObject
@@ -78,7 +78,7 @@ namespace SimpleSyncPlugin.Threading
                 _saveEntityQueue[type].Enqueue(new DeleteEntityData { Entity = entity });
             }
 
-            EnqueueSendOperation<T>(type);
+            EnqueueSendOperation(type);
         }
 
         public void SubmitObjectDeleteList<T>(ObjectType type, List<T> entities) where T : DatabaseObject
@@ -91,16 +91,16 @@ namespace SimpleSyncPlugin.Threading
                 }
             }
 
-            EnqueueSendOperation<T>(type);
+            EnqueueSendOperation(type);
         }
 
-        private void EnqueueSendOperation<T>(ObjectType type)
+        private void EnqueueSendOperation(ObjectType type)
         {
             _worker.Enqueue(async () =>
             {
                 var entities = new List<SaveEntityData>();
-                List<DeleteEntityData> entitiesToDelete = new List<DeleteEntityData>();
-                List<SaveEntityDiffData> entityChanges = new List<SaveEntityDiffData>();
+                var entitiesToDelete = new List<DeleteEntityData>();
+                var entityChanges = new List<SaveEntityDiffData>();
 
                 lock (_saveEntityQueue)
                 {

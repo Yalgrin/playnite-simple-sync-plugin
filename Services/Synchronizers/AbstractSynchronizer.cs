@@ -51,40 +51,6 @@ namespace SimpleSyncPlugin.Services.Synchronizers
                 var handledType = GetHandledType();
                 DataProcessingBroker.SubmitObjectDeleteList(handledType, removedItems);
                 DataProcessingBroker.SubmitObjectSaveList(handledType, addedItems);
-
-                // try
-                // {
-                //     foreach (var removedItem in removedItems)
-                //     {
-                //         if (IsNotInGracePeriod(removedItem.Id))
-                //         {
-                //             await DeleteObject(removedItem);
-                //         }
-                //         else
-                //         {
-                //             Logger.Trace($"Item {removedItem.Id} is in grace period, skipping...");
-                //         }
-                //     }
-                //
-                //     foreach (var addedItem in addedItems)
-                //     {
-                //         if (IsNotInGracePeriod(addedItem.Id))
-                //         {
-                //             await SaveObject(addedItem);
-                //         }
-                //         else
-                //         {
-                //             Logger.Trace($"Item {addedItem.Id} is in grace period, skipping...");
-                //         }
-                //     }
-                // }
-                // catch (Exception ex)
-                // {
-                //     Logger.Error(ex, "Error occurred while saving new or removed objects!");
-                //     _api.Notifications.Add(new NotificationMessage(ItemCollectionSaveErrorId,
-                //         string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_ItemCollectionSaveError"),
-                //             ex.Message), NotificationType.Error));
-                // }
             };
 
             databaseCollection.ItemUpdated += (sender, args) =>
@@ -100,32 +66,10 @@ namespace SimpleSyncPlugin.Services.Synchronizers
                 {
                     DataProcessingBroker.SubmitObjectSaveDiff(handledType, e.OldData, e.NewData);
                 }
-
-                // try
-                // {
-                //     foreach (var updatedItem in updatedItems.Where(HasObjectChanged))
-                //     {
-                //         if (IsNotInGracePeriod(updatedItem.NewData.Id))
-                //         {
-                //             await SaveObject(updatedItem.NewData);
-                //         }
-                //         else
-                //         {
-                //             Logger.Trace($"Item {updatedItem.NewData.Id} is in grace period, skipping...");
-                //         }
-                //     }
-                // }
-                // catch (Exception ex)
-                // {
-                //     Logger.Error(ex, "Error occurred while saving updated objects!");
-                //     _api.Notifications.Add(new NotificationMessage(ItemUpdatedSaveErrorId,
-                //         string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_ItemUpdateSaveError"),
-                //             ex.Message), NotificationType.Error));
-                // }
             };
         }
 
-        protected bool IsNotInGracePeriod(Guid id)
+        public bool IsNotInGracePeriod(Guid id)
         {
             lock (_gracePeriodMap)
             {

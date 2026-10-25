@@ -9,7 +9,6 @@ using Playnite.SDK.Plugins;
 using SimpleSyncPlugin.Commons;
 using SimpleSyncPlugin.Extensions;
 using SimpleSyncPlugin.Models;
-using SimpleSyncPlugin.Threading;
 
 namespace SimpleSyncPlugin.Services.Synchronizers
 {
@@ -19,16 +18,11 @@ namespace SimpleSyncPlugin.Services.Synchronizers
 
         private readonly IPlayniteAPI _api;
         private readonly SyncBackendService _syncBackendService;
-        private readonly DataProcessingBroker _dataProcessingBroker;
-        private readonly DataProcessingService _dataProcessingService;
 
-        public LibraryPluginSynchronizer(IPlayniteAPI api, SyncBackendService syncBackendService,
-            DataProcessingBroker dataProcessingBroker, DataProcessingService dataProcessingService)
+        public LibraryPluginSynchronizer(IPlayniteAPI api, SyncBackendService syncBackendService)
         {
             _api = api;
             _syncBackendService = syncBackendService;
-            _dataProcessingBroker = dataProcessingBroker;
-            _dataProcessingService = dataProcessingService;
         }
 
         public void RegisterListeners()
@@ -92,6 +86,11 @@ namespace SimpleSyncPlugin.Services.Synchronizers
                 progArgs.CurrentProgressValue++;
                 i++;
             }
+        }
+
+        public bool IsNotInGracePeriod(Guid id)
+        {
+            return true;
         }
 
         private List<LibraryPlugin> GetAllLibraryPlugins()

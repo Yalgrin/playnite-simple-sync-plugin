@@ -37,9 +37,9 @@ namespace SimpleSyncPlugin.Services.Handlers
             await DoHandleSave(objectDto, dto.ObjectId);
         }
 
-        public Task HandleReassignedId(object obj)
+        public Task HandleReassignedId(object dto)
         {
-            if (!(obj is TDto objectDto))
+            if (!(dto is TDto objectDto))
             {
                 return Task.CompletedTask;
             }
@@ -168,12 +168,14 @@ namespace SimpleSyncPlugin.Services.Handlers
                 if (isNew)
                 {
                     Logger.Info($"Saving new object {GetHandledType()} with id {entity.Id}...");
+                    _dataSynchronizationService.RegisterGracePeriod(GetHandledType(), entity.Id);
                     databaseCollection.Add(entity);
                     FillEntityPostNewEntitySave(entity, objectDto);
                 }
                 else
                 {
                     Logger.Info($"Saving existing object {GetHandledType()} with id {entity.Id}...");
+                    _dataSynchronizationService.RegisterGracePeriod(GetHandledType(), entity.Id);
                     databaseCollection.Update(entity);
                 }
 

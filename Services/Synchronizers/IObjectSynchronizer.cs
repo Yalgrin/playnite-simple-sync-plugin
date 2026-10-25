@@ -19,6 +19,8 @@ namespace SimpleSyncPlugin.Services.Synchronizers
 
         Task SyncSelected(IGameDatabaseAPI db, GlobalProgressActionArgs progArgs, List<Guid> ids);
 
+        bool IsNotInGracePeriod(Guid id);
+
         void RegisterGracePeriod(Guid id);
 
         Task SaveObject(object entity, CancellationToken cancellationToken = default);

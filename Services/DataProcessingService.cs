@@ -177,7 +177,7 @@ namespace SimpleSyncPlugin.Services
                         return;
                     }
 
-                    await ProcessChange(changeDto);
+                    await ProcessChange(changeDto, progArgs.CancelToken);
 
                     _settings.UpdateLastProcessedId(changeDto.Id);
 

@@ -4,6 +4,7 @@ using Playnite.SDK;
 using Playnite.SDK.Models;
 using SimpleSyncPlugin.Models;
 using SimpleSyncPlugin.Settings;
+using SimpleSyncPlugin.Threading;
 
 namespace SimpleSyncPlugin.Services.Synchronizers
 {
@@ -14,7 +15,9 @@ namespace SimpleSyncPlugin.Services.Synchronizers
         private readonly SyncBackendService _syncBackendService;
 
         public CompanySynchronizer(IPlayniteAPI api, SimpleSyncPluginSettingsViewModel settingsViewModel,
-            SyncBackendService syncBackendService) : base(api, settingsViewModel)
+            DataProcessingBroker dataProcessingBroker, DataProcessingService dataProcessingService,
+            SyncBackendService syncBackendService) : base(api, settingsViewModel, dataProcessingBroker,
+            dataProcessingService)
         {
             _syncBackendService = syncBackendService;
         }
@@ -24,16 +27,31 @@ namespace SimpleSyncPlugin.Services.Synchronizers
             return db.Companies;
         }
 
-        protected override Task SaveObject(Company entity, CancellationToken cancellationToken = default)
+        public override async Task SaveObject(object entity, CancellationToken cancellationToken = default)
         {
-            Logger.Trace($"Saving company with id = {entity.Id}");
-            return _syncBackendService.SaveCompany(entity, cancellationToken);
+            if (!(entity is Company company))
+            {
+                return;
+            }
+
+            Logger.Trace($"Saving company with id = {company.Id}");
+            var savedObject = await _syncBackendService.SaveCompany(company, cancellationToken);
+            if (savedObject.Id != company.Id.ToString())
+            {
+                Logger.Debug($"Company id mismatch: saved id = {savedObject.Id}, entity id = {company.Id}");
+                _dataProcessingService.ProcessIdMismatch(GetHandledType(), savedObject);
+            }
         }
 
-        protected override Task DeleteObject(Company entity, CancellationToken cancellationToken = default)
+        public override Task DeleteObject(object entity, CancellationToken cancellationToken = default)
         {
-            Logger.Trace($"Deleting company with id = {entity.Id}");
-            return _syncBackendService.DeleteCompany(entity, cancellationToken);
+            if (!(entity is Company company))
+            {
+                return Task.CompletedTask;
+            }
+
+            Logger.Trace($"Deleting company with id = {company.Id}");
+            return _syncBackendService.DeleteCompany(company, cancellationToken);
         }
 
         public override ObjectType GetHandledType()

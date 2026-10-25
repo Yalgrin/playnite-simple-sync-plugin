@@ -11,11 +11,11 @@ namespace SimpleSyncPlugin.Exceptions
     {
     }
 
-    public class AuthException : Exception
+    public class SecurityException : Exception
     {
         public string StatusCode { get; private set; }
 
-        public AuthException(string statusCode) : base(statusCode)
+        public SecurityException(string statusCode) : base(statusCode)
         {
             StatusCode = statusCode;
         }

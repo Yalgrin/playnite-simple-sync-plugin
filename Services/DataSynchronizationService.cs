@@ -6,6 +6,7 @@ using Playnite.SDK;
 using SimpleSyncPlugin.Models;
 using SimpleSyncPlugin.Services.Synchronizers;
 using SimpleSyncPlugin.Settings;
+using SimpleSyncPlugin.Threading;
 
 namespace SimpleSyncPlugin.Services
 {
@@ -16,37 +17,57 @@ namespace SimpleSyncPlugin.Services
         private readonly IPlayniteAPI _api;
         private readonly SimpleSyncPluginSettingsViewModel _settingsViewModel;
         private readonly SyncBackendService _syncBackendService;
-        private readonly List<IObjectSynchronizer> _synchronizerList;
-        private readonly Dictionary<ObjectType, IObjectSynchronizer> _objectSynchronizers;
+        private List<IObjectSynchronizer> _synchronizerList;
+        private Dictionary<ObjectType, IObjectSynchronizer> _objectSynchronizers;
+        private SimpleSyncWorker _simpleSyncWorker;
 
         public DataSynchronizationService(IPlayniteAPI api, SimpleSyncPluginSettingsViewModel settingsViewModel,
-            SyncBackendService syncBackendService)
+            SyncBackendService syncBackendService, SimpleSyncWorker simpleSyncWorker)
         {
             _api = api;
             _settingsViewModel = settingsViewModel;
             _syncBackendService = syncBackendService;
-            _synchronizerList = CreateSynchronizerList();
+            _simpleSyncWorker = simpleSyncWorker;
+        }
+
+        public void Initialize(DataProcessingBroker dataProcessingBroker, DataProcessingService dataProcessingService)
+        {
+            _synchronizerList = CreateSynchronizerList(dataProcessingBroker, dataProcessingService);
             _objectSynchronizers = CreateSynchronizerMap();
         }
 
-        private List<IObjectSynchronizer> CreateSynchronizerList()
+        private List<IObjectSynchronizer> CreateSynchronizerList(DataProcessingBroker dataProcessingBroker,
+            DataProcessingService dataProcessingService)
         {
             return new List<IObjectSynchronizer>
             {
-                new LibraryPluginSynchronizer(_api, _syncBackendService),
-                new CategorySynchronizer(_api, _settingsViewModel, _syncBackendService),
-                new GenreSynchronizer(_api, _settingsViewModel, _syncBackendService),
-                new PlatformSynchronizer(_api, _settingsViewModel, _syncBackendService),
-                new CompanySynchronizer(_api, _settingsViewModel, _syncBackendService),
-                new FeatureSynchronizer(_api, _settingsViewModel, _syncBackendService),
-                new TagSynchronizer(_api, _settingsViewModel, _syncBackendService),
-                new SeriesSynchronizer(_api, _settingsViewModel, _syncBackendService),
-                new AgeRatingSynchronizer(_api, _settingsViewModel, _syncBackendService),
-                new RegionSynchronizer(_api, _settingsViewModel, _syncBackendService),
-                new SourceSynchronizer(_api, _settingsViewModel, _syncBackendService),
-                new CompletionStatusSynchronizer(_api, _settingsViewModel, _syncBackendService),
-                new FilterPresetSynchronizer(_api, _settingsViewModel, _syncBackendService),
-                new GameSynchronizer(_api, _settingsViewModel, _syncBackendService)
+                new LibraryPluginSynchronizer(_api, _syncBackendService, dataProcessingBroker, dataProcessingService),
+                new CategorySynchronizer(_api, _settingsViewModel, dataProcessingBroker, dataProcessingService,
+                    _syncBackendService),
+                new GenreSynchronizer(_api, _settingsViewModel, dataProcessingBroker, dataProcessingService,
+                    _syncBackendService),
+                new PlatformSynchronizer(_api, _settingsViewModel, dataProcessingBroker, dataProcessingService,
+                    _syncBackendService),
+                new CompanySynchronizer(_api, _settingsViewModel, dataProcessingBroker, dataProcessingService,
+                    _syncBackendService),
+                new FeatureSynchronizer(_api, _settingsViewModel, dataProcessingBroker, dataProcessingService,
+                    _syncBackendService),
+                new TagSynchronizer(_api, _settingsViewModel, dataProcessingBroker, dataProcessingService,
+                    _syncBackendService),
+                new SeriesSynchronizer(_api, _settingsViewModel, dataProcessingBroker, dataProcessingService,
+                    _syncBackendService),
+                new AgeRatingSynchronizer(_api, _settingsViewModel, dataProcessingBroker, dataProcessingService,
+                    _syncBackendService),
+                new RegionSynchronizer(_api, _settingsViewModel, dataProcessingBroker, dataProcessingService,
+                    _syncBackendService),
+                new SourceSynchronizer(_api, _settingsViewModel, dataProcessingBroker, dataProcessingService,
+                    _syncBackendService),
+                new CompletionStatusSynchronizer(_api, _settingsViewModel, dataProcessingBroker, dataProcessingService,
+                    _syncBackendService),
+                new FilterPresetSynchronizer(_api, _settingsViewModel, dataProcessingBroker, dataProcessingService,
+                    _syncBackendService),
+                new GameSynchronizer(_api, _settingsViewModel, dataProcessingBroker, dataProcessingService,
+                    _syncBackendService)
             };
         }
 
@@ -85,7 +106,7 @@ namespace SimpleSyncPlugin.Services
                         return;
                     }
 
-                    await synchronizer.SyncAll(db, progArgs);
+                    await _simpleSyncWorker.Enqueue(() => synchronizer.SyncAll(db, progArgs));
                 }
 
                 Logger.Info("SyncAll > END");
@@ -107,7 +128,7 @@ namespace SimpleSyncPlugin.Services
                 {
                     progArgs.ProgressMaxValue = ids.Count;
                     progArgs.CurrentProgressValue = 0;
-                    await gameSynchronizer.SyncSelected(db, progArgs, ids);
+                    await _simpleSyncWorker.Enqueue(() => gameSynchronizer.SyncSelected(db, progArgs, ids));
                 }
 
                 Logger.Info("SyncGames > END");
@@ -124,6 +145,46 @@ namespace SimpleSyncPlugin.Services
             {
                 synchronizer.RegisterGracePeriod(id);
             }
+        }
+
+        public Task SaveObject(ObjectType objectType, object entity)
+        {
+            if (_objectSynchronizers.TryGetValue(objectType.GetBaseObjectType(), out var synchronizer))
+            {
+                return synchronizer.SaveObject(entity);
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task SaveObjectById(ObjectType objectType, Guid id)
+        {
+            if (_objectSynchronizers.TryGetValue(objectType.GetBaseObjectType(), out var synchronizer))
+            {
+                return synchronizer.SaveObjectById(id);
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task SaveObjectDiff(ObjectType objectType, object oldEntity, object newEntity)
+        {
+            if (_objectSynchronizers.TryGetValue(objectType.GetBaseObjectType(), out var synchronizer))
+            {
+                return synchronizer.SaveDiffObject(oldEntity, newEntity);
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task DeleteObject(ObjectType objectType, object entity)
+        {
+            if (_objectSynchronizers.TryGetValue(objectType.GetBaseObjectType(), out var synchronizer))
+            {
+                return synchronizer.DeleteObject(entity);
+            }
+
+            return Task.CompletedTask;
         }
     }
 }

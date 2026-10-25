@@ -4,6 +4,7 @@ using Playnite.SDK;
 using Playnite.SDK.Models;
 using SimpleSyncPlugin.Models;
 using SimpleSyncPlugin.Settings;
+using SimpleSyncPlugin.Threading;
 
 namespace SimpleSyncPlugin.Services.Synchronizers
 {
@@ -14,7 +15,9 @@ namespace SimpleSyncPlugin.Services.Synchronizers
         private readonly SyncBackendService _syncBackendService;
 
         public CategorySynchronizer(IPlayniteAPI api, SimpleSyncPluginSettingsViewModel settingsViewModel,
-            SyncBackendService syncBackendService) : base(api, settingsViewModel)
+            DataProcessingBroker dataProcessingBroker, DataProcessingService dataProcessingService,
+            SyncBackendService syncBackendService) : base(api, settingsViewModel, dataProcessingBroker,
+            dataProcessingService)
         {
             _syncBackendService = syncBackendService;
         }
@@ -24,16 +27,31 @@ namespace SimpleSyncPlugin.Services.Synchronizers
             return db.Categories;
         }
 
-        protected override Task SaveObject(Category entity, CancellationToken cancellationToken = default)
+        public override async Task SaveObject(object entity, CancellationToken cancellationToken = default)
         {
-            Logger.Trace($"Saving category with id = {entity.Id}");
-            return _syncBackendService.SaveCategory(entity, cancellationToken);
+            if (!(entity is Category category))
+            {
+                return;
+            }
+
+            Logger.Trace($"Saving category with id = {category.Id}");
+            var savedObject = await _syncBackendService.SaveCategory(category, cancellationToken);
+            if (savedObject.Id != category.Id.ToString())
+            {
+                Logger.Debug($"Category id mismatch: saved id = {savedObject.Id}, entity id = {category.Id}");
+                _dataProcessingService.ProcessIdMismatch(GetHandledType(), savedObject);
+            }
         }
 
-        protected override Task DeleteObject(Category entity, CancellationToken cancellationToken = default)
+        public override Task DeleteObject(object entity, CancellationToken cancellationToken = default)
         {
-            Logger.Trace($"Deleting category with id = {entity.Id}");
-            return _syncBackendService.DeleteCategory(entity, cancellationToken);
+            if (!(entity is Category category))
+            {
+                return Task.CompletedTask;
+            }
+
+            Logger.Trace($"Deleting category with id = {category.Id}");
+            return _syncBackendService.DeleteCategory(category, cancellationToken);
         }
 
         public override ObjectType GetHandledType()

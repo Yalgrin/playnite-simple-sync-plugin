@@ -9,6 +9,7 @@ using Playnite.SDK.Plugins;
 using SimpleSyncPlugin.Commons;
 using SimpleSyncPlugin.Extensions;
 using SimpleSyncPlugin.Models;
+using SimpleSyncPlugin.Threading;
 
 namespace SimpleSyncPlugin.Services.Synchronizers
 {
@@ -18,11 +19,16 @@ namespace SimpleSyncPlugin.Services.Synchronizers
 
         private readonly IPlayniteAPI _api;
         private readonly SyncBackendService _syncBackendService;
+        private readonly DataProcessingBroker _dataProcessingBroker;
+        private readonly DataProcessingService _dataProcessingService;
 
-        public LibraryPluginSynchronizer(IPlayniteAPI api, SyncBackendService syncBackendService)
+        public LibraryPluginSynchronizer(IPlayniteAPI api, SyncBackendService syncBackendService,
+            DataProcessingBroker dataProcessingBroker, DataProcessingService dataProcessingService)
         {
             _api = api;
             _syncBackendService = syncBackendService;
+            _dataProcessingBroker = dataProcessingBroker;
+            _dataProcessingService = dataProcessingService;
         }
 
         public void RegisterListeners()
@@ -88,12 +94,6 @@ namespace SimpleSyncPlugin.Services.Synchronizers
             }
         }
 
-        private Task SaveObject(LibraryPlugin entity, CancellationToken cancellationToken = default)
-        {
-            Logger.Trace($"Saving library plugin with id = {entity.Id}");
-            return _syncBackendService.SaveLibraryPlugin(entity, cancellationToken);
-        }
-
         private List<LibraryPlugin> GetAllLibraryPlugins()
         {
             var result = new List<LibraryPlugin> { new FakePlayniteLibraryPlugin() };
@@ -111,6 +111,34 @@ namespace SimpleSyncPlugin.Services.Synchronizers
         public void RegisterGracePeriod(Guid id)
         {
             //unsupported, will only sync when requested
+        }
+
+        public Task SaveObject(object entity, CancellationToken cancellationToken = default)
+        {
+            if (!(entity is LibraryPlugin libraryPlugin))
+            {
+                return Task.CompletedTask;
+            }
+
+            Logger.Trace($"Saving library plugin with id = {libraryPlugin.Id}");
+            return _syncBackendService.SaveLibraryPlugin(libraryPlugin, cancellationToken);
+        }
+
+        public Task SaveObjectById(Guid id, CancellationToken cancellationToken = default)
+        {
+            var allLibraryPlugins = GetAllLibraryPlugins();
+            var entity = allLibraryPlugins.Find(e => e.Id == id);
+            return entity != null ? SaveObject(entity, cancellationToken) : Task.CompletedTask;
+        }
+
+        public Task SaveDiffObject(object oldEntity, object newEntity, CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task DeleteObject(object entity, CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
         }
 
         private string GetLocalizedString(string key)

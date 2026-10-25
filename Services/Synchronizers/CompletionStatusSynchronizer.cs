@@ -4,6 +4,7 @@ using Playnite.SDK;
 using Playnite.SDK.Models;
 using SimpleSyncPlugin.Models;
 using SimpleSyncPlugin.Settings;
+using SimpleSyncPlugin.Threading;
 
 namespace SimpleSyncPlugin.Services.Synchronizers
 {
@@ -14,7 +15,9 @@ namespace SimpleSyncPlugin.Services.Synchronizers
         private readonly SyncBackendService _syncBackendService;
 
         public CompletionStatusSynchronizer(IPlayniteAPI api, SimpleSyncPluginSettingsViewModel settingsViewModel,
-            SyncBackendService syncBackendService) : base(api, settingsViewModel)
+            DataProcessingBroker dataProcessingBroker, DataProcessingService dataProcessingService,
+            SyncBackendService syncBackendService) : base(api, settingsViewModel, dataProcessingBroker,
+            dataProcessingService)
         {
             _syncBackendService = syncBackendService;
         }
@@ -24,16 +27,32 @@ namespace SimpleSyncPlugin.Services.Synchronizers
             return db.CompletionStatuses;
         }
 
-        protected override Task SaveObject(CompletionStatus entity, CancellationToken cancellationToken = default)
+        public override async Task SaveObject(object entity, CancellationToken cancellationToken = default)
         {
-            Logger.Trace($"Saving completion status with id = {entity.Id}");
-            return _syncBackendService.SaveCompletionStatus(entity, cancellationToken);
+            if (!(entity is CompletionStatus completionStatus))
+            {
+                return;
+            }
+
+            Logger.Trace($"Saving completion status with id = {completionStatus.Id}");
+            var savedObject = await _syncBackendService.SaveCompletionStatus(completionStatus, cancellationToken);
+            if (savedObject.Id != completionStatus.Id.ToString())
+            {
+                Logger.Debug(
+                    $"Completion status id mismatch: saved id = {savedObject.Id}, entity id = {completionStatus.Id}");
+                _dataProcessingService.ProcessIdMismatch(GetHandledType(), savedObject);
+            }
         }
 
-        protected override Task DeleteObject(CompletionStatus entity, CancellationToken cancellationToken = default)
+        public override Task DeleteObject(object entity, CancellationToken cancellationToken = default)
         {
-            Logger.Trace($"Deleting completion status with id = {entity.Id}");
-            return _syncBackendService.DeleteCompletionStatus(entity, cancellationToken);
+            if (!(entity is CompletionStatus completionStatus))
+            {
+                return Task.CompletedTask;
+            }
+
+            Logger.Trace($"Deleting completion status with id = {completionStatus.Id}");
+            return _syncBackendService.DeleteCompletionStatus(completionStatus, cancellationToken);
         }
 
         public override ObjectType GetHandledType()

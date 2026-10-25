@@ -144,8 +144,9 @@
         </Compile>
         <Compile Include="SimpleSyncPlugin.cs"/>
         <Compile Include="Properties\AssemblyInfo.cs"/>
+        <Compile Include="Threading\SimpleSyncWorker.cs"/>
         <Compile Include="Threading\ServerConnectionThread.cs"/>
-        <Compile Include="Threading\DataProcessingThread.cs"/>
+        <Compile Include="Threading\DataProcessingBroker.cs"/>
         <Compile Include="Threading\SessionManager.cs"/>
     </ItemGroup>
     <ItemGroup>

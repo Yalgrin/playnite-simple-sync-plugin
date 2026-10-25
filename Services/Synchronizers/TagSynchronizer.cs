@@ -4,6 +4,7 @@ using Playnite.SDK;
 using Playnite.SDK.Models;
 using SimpleSyncPlugin.Models;
 using SimpleSyncPlugin.Settings;
+using SimpleSyncPlugin.Threading;
 
 namespace SimpleSyncPlugin.Services.Synchronizers
 {
@@ -14,7 +15,9 @@ namespace SimpleSyncPlugin.Services.Synchronizers
         private readonly SyncBackendService _syncBackendService;
 
         public TagSynchronizer(IPlayniteAPI api, SimpleSyncPluginSettingsViewModel settingsViewModel,
-            SyncBackendService syncBackendService) : base(api, settingsViewModel)
+            DataProcessingBroker dataProcessingBroker, DataProcessingService dataProcessingService,
+            SyncBackendService syncBackendService) : base(api, settingsViewModel, dataProcessingBroker,
+            dataProcessingService)
         {
             _syncBackendService = syncBackendService;
         }
@@ -24,16 +27,32 @@ namespace SimpleSyncPlugin.Services.Synchronizers
             return db.Tags;
         }
 
-        protected override Task SaveObject(Tag entity, CancellationToken cancellationToken = default)
+
+        public override async Task SaveObject(object entity, CancellationToken cancellationToken = default)
         {
-            Logger.Trace($"Saving tag with id = {entity.Id}");
-            return _syncBackendService.SaveTag(entity, cancellationToken);
+            if (!(entity is Tag tag))
+            {
+                return;
+            }
+
+            Logger.Trace($"Saving tag with id = {tag.Id}");
+            var savedObject = await _syncBackendService.SaveTag(tag, cancellationToken);
+            if (savedObject.Id != tag.Id.ToString())
+            {
+                Logger.Debug($"Tag id mismatch: saved id = {savedObject.Id}, entity id = {tag.Id}");
+                _dataProcessingService.ProcessIdMismatch(GetHandledType(), savedObject);
+            }
         }
 
-        protected override Task DeleteObject(Tag entity, CancellationToken cancellationToken = default)
+        public override Task DeleteObject(object entity, CancellationToken cancellationToken = default)
         {
-            Logger.Trace($"Deleting tag with id = {entity.Id}");
-            return _syncBackendService.DeleteTag(entity, cancellationToken);
+            if (!(entity is Tag tag))
+            {
+                return Task.CompletedTask;
+            }
+
+            Logger.Trace($"Deleting tag with id = {tag.Id}");
+            return _syncBackendService.DeleteTag(tag, cancellationToken);
         }
 
         public override ObjectType GetHandledType()

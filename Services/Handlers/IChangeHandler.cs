@@ -7,6 +7,8 @@ namespace SimpleSyncPlugin.Services.Handlers
     {
         Task HandleChange(ChangeMessage dto);
 
+        Task HandleReassignedId(object dto);
+
         ObjectType GetHandledType();
     }
 }

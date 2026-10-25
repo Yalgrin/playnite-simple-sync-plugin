@@ -187,23 +187,28 @@ namespace SimpleSyncPlugin.Services
             return HandleRequest(SyncBackendClient.CheckConnection(cancellationToken));
         }
 
-        public async Task SaveLibraryPlugin(LibraryPlugin libraryPlugin, CancellationToken cancellationToken = default)
+        public async Task<LibraryPluginDto> SaveLibraryPlugin(LibraryPlugin libraryPlugin,
+            CancellationToken cancellationToken = default)
         {
             var dto = _libraryPluginMapper.ToDto(libraryPlugin);
             if (SyncBackendClient != null)
             {
-                await HandleRequest(SyncBackendClient.SaveLibraryPlugin(dto,
+                return await HandleRequest(SyncBackendClient.SaveLibraryPlugin(dto,
                     libraryPlugin.LibraryIcon, libraryPlugin.LibraryBackground, cancellationToken));
             }
+
+            return null;
         }
 
-        public async Task SaveCategory(Category category, CancellationToken cancellationToken = default)
+        public async Task<CategoryDto> SaveCategory(Category category, CancellationToken cancellationToken = default)
         {
             var dto = _categoryMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await HandleRequest(SyncBackendClient.SaveCategory(dto, cancellationToken));
+                return await HandleRequest(SyncBackendClient.SaveCategory(dto, cancellationToken));
             }
+
+            return null;
         }
 
         public async Task DeleteCategory(Category category, CancellationToken cancellationToken = default)
@@ -215,13 +220,15 @@ namespace SimpleSyncPlugin.Services
             }
         }
 
-        public async Task SaveGenre(Genre category, CancellationToken cancellationToken = default)
+        public async Task<GenreDto> SaveGenre(Genre category, CancellationToken cancellationToken = default)
         {
             var dto = _genreMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await HandleRequest(SyncBackendClient.SaveGenre(dto, cancellationToken));
+                return await HandleRequest(SyncBackendClient.SaveGenre(dto, cancellationToken));
             }
+
+            return null;
         }
 
         public async Task DeleteGenre(Genre category, CancellationToken cancellationToken = default)
@@ -233,17 +240,19 @@ namespace SimpleSyncPlugin.Services
             }
         }
 
-        public async Task SavePlatform(Platform category, CancellationToken cancellationToken = default)
+        public async Task<PlatformDto> SavePlatform(Platform category, CancellationToken cancellationToken = default)
         {
             var dto = _platformMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await HandleRequest(SyncBackendClient.SavePlatform(dto, category.Icon, category.Cover,
+                return await HandleRequest(SyncBackendClient.SavePlatform(dto, category.Icon, category.Cover,
                     category.Background, cancellationToken));
             }
+
+            return null;
         }
 
-        public async Task SavePlatformDiff(Platform oldEntity, Platform newEntity,
+        public async Task<PlatformDto> SavePlatformDiff(Platform oldEntity, Platform newEntity,
             CancellationToken cancellationToken = default)
         {
             var dto = _platformDiffMapper.ToDiffDto(oldEntity, newEntity);
@@ -251,15 +260,17 @@ namespace SimpleSyncPlugin.Services
             {
                 try
                 {
-                    await HandleRequest(SyncBackendClient.SavePlatformDiff(dto, newEntity.Icon, newEntity.Cover,
+                    return await HandleRequest(SyncBackendClient.SavePlatformDiff(dto, newEntity.Icon, newEntity.Cover,
                         newEntity.Background, cancellationToken));
                 }
                 catch (ManualSynchronizationRequiredException ex)
                 {
                     Logger.Error(ex, "ManualSynchronizationRequiredException");
-                    await HandleRequest(SavePlatform(newEntity, cancellationToken));
+                    return await HandleRequest(SavePlatform(newEntity, cancellationToken));
                 }
             }
+
+            return null;
         }
 
         public async Task DeletePlatform(Platform category, CancellationToken cancellationToken = default)
@@ -271,13 +282,15 @@ namespace SimpleSyncPlugin.Services
             }
         }
 
-        public async Task SaveCompany(Company category, CancellationToken cancellationToken = default)
+        public async Task<CompanyDto> SaveCompany(Company category, CancellationToken cancellationToken = default)
         {
             var dto = _companyMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await HandleRequest(SyncBackendClient.SaveCompany(dto, cancellationToken));
+                return await HandleRequest(SyncBackendClient.SaveCompany(dto, cancellationToken));
             }
+
+            return null;
         }
 
         public async Task DeleteCompany(Company category, CancellationToken cancellationToken = default)
@@ -289,13 +302,15 @@ namespace SimpleSyncPlugin.Services
             }
         }
 
-        public async Task SaveFeature(GameFeature category, CancellationToken cancellationToken = default)
+        public async Task<FeatureDto> SaveFeature(GameFeature category, CancellationToken cancellationToken = default)
         {
             var dto = _featureMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await HandleRequest(SyncBackendClient.SaveFeature(dto, cancellationToken));
+                return await HandleRequest(SyncBackendClient.SaveFeature(dto, cancellationToken));
             }
+
+            return null;
         }
 
         public async Task DeleteFeature(GameFeature category, CancellationToken cancellationToken = default)
@@ -307,13 +322,15 @@ namespace SimpleSyncPlugin.Services
             }
         }
 
-        public async Task SaveTag(Tag category, CancellationToken cancellationToken = default)
+        public async Task<TagDto> SaveTag(Tag category, CancellationToken cancellationToken = default)
         {
             var dto = _tagMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await HandleRequest(SyncBackendClient.SaveTag(dto, cancellationToken));
+                return await HandleRequest(SyncBackendClient.SaveTag(dto, cancellationToken));
             }
+
+            return null;
         }
 
         public async Task DeleteTag(Tag category, CancellationToken cancellationToken = default)
@@ -325,13 +342,15 @@ namespace SimpleSyncPlugin.Services
             }
         }
 
-        public async Task SaveSeries(Series category, CancellationToken cancellationToken = default)
+        public async Task<SeriesDto> SaveSeries(Series category, CancellationToken cancellationToken = default)
         {
             var dto = _seriesMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await HandleRequest(SyncBackendClient.SaveSeries(dto, cancellationToken));
+                return await HandleRequest(SyncBackendClient.SaveSeries(dto, cancellationToken));
             }
+
+            return null;
         }
 
         public async Task DeleteSeries(Series category, CancellationToken cancellationToken = default)
@@ -343,13 +362,15 @@ namespace SimpleSyncPlugin.Services
             }
         }
 
-        public async Task SaveAgeRating(AgeRating category, CancellationToken cancellationToken = default)
+        public async Task<AgeRatingDto> SaveAgeRating(AgeRating category, CancellationToken cancellationToken = default)
         {
             var dto = _ageRatingMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await HandleRequest(SyncBackendClient.SaveAgeRating(dto, cancellationToken));
+                return await HandleRequest(SyncBackendClient.SaveAgeRating(dto, cancellationToken));
             }
+
+            return null;
         }
 
         public async Task DeleteAgeRating(AgeRating category, CancellationToken cancellationToken = default)
@@ -361,13 +382,15 @@ namespace SimpleSyncPlugin.Services
             }
         }
 
-        public async Task SaveRegion(Region category, CancellationToken cancellationToken = default)
+        public async Task<RegionDto> SaveRegion(Region category, CancellationToken cancellationToken = default)
         {
             var dto = _regionMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await HandleRequest(SyncBackendClient.SaveRegion(dto, cancellationToken));
+                return await HandleRequest(SyncBackendClient.SaveRegion(dto, cancellationToken));
             }
+
+            return null;
         }
 
         public async Task DeleteRegion(Region category, CancellationToken cancellationToken = default)
@@ -379,13 +402,15 @@ namespace SimpleSyncPlugin.Services
             }
         }
 
-        public async Task SaveSource(GameSource category, CancellationToken cancellationToken = default)
+        public async Task<SourceDto> SaveSource(GameSource category, CancellationToken cancellationToken = default)
         {
             var dto = _sourceMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await HandleRequest(SyncBackendClient.SaveSource(dto, cancellationToken));
+                return await HandleRequest(SyncBackendClient.SaveSource(dto, cancellationToken));
             }
+
+            return null;
         }
 
         public async Task DeleteSource(GameSource category, CancellationToken cancellationToken = default)
@@ -397,13 +422,16 @@ namespace SimpleSyncPlugin.Services
             }
         }
 
-        public async Task SaveCompletionStatus(CompletionStatus category, CancellationToken cancellationToken = default)
+        public async Task<CompletionStatusDto> SaveCompletionStatus(CompletionStatus category,
+            CancellationToken cancellationToken = default)
         {
             var dto = _completionStatusMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await HandleRequest(SyncBackendClient.SaveCompletionStatus(dto, cancellationToken));
+                return await HandleRequest(SyncBackendClient.SaveCompletionStatus(dto, cancellationToken));
             }
+
+            return null;
         }
 
         public async Task DeleteCompletionStatus(CompletionStatus category,
@@ -416,13 +444,16 @@ namespace SimpleSyncPlugin.Services
             }
         }
 
-        public async Task SaveFilterPreset(FilterPreset category, CancellationToken cancellationToken = default)
+        public async Task<FilterPresetDto> SaveFilterPreset(FilterPreset category,
+            CancellationToken cancellationToken = default)
         {
             var dto = _filterPresetMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await HandleRequest(SyncBackendClient.SaveFilterPreset(dto, cancellationToken));
+                return await HandleRequest(SyncBackendClient.SaveFilterPreset(dto, cancellationToken));
             }
+
+            return null;
         }
 
         public async Task DeleteFilterPreset(FilterPreset category, CancellationToken cancellationToken = default)
@@ -434,32 +465,37 @@ namespace SimpleSyncPlugin.Services
             }
         }
 
-        public async Task SaveGame(Game category, CancellationToken cancellationToken = default)
+        public async Task<GameDto> SaveGame(Game category, CancellationToken cancellationToken = default)
         {
             var dto = _gameMapper.ToDto(category);
             if (SyncBackendClient != null)
             {
-                await HandleRequest(SyncBackendClient.SaveGame(dto, category.Icon, category.CoverImage,
+                return await HandleRequest(SyncBackendClient.SaveGame(dto, category.Icon, category.CoverImage,
                     category.BackgroundImage, cancellationToken));
             }
+
+            return null;
         }
 
-        public async Task SaveGameDiff(Game oldEntity, Game newEntity, CancellationToken cancellationToken = default)
+        public async Task<GameDto> SaveGameDiff(Game oldEntity, Game newEntity,
+            CancellationToken cancellationToken = default)
         {
             var dto = _gameDiffMapper.ToDiffDto(oldEntity, newEntity);
             if (SyncBackendClient != null)
             {
                 try
                 {
-                    await HandleRequest(SyncBackendClient.SaveGameDiff(dto, newEntity.Icon, newEntity.CoverImage,
+                    return await HandleRequest(SyncBackendClient.SaveGameDiff(dto, newEntity.Icon, newEntity.CoverImage,
                         newEntity.BackgroundImage, cancellationToken));
                 }
                 catch (ManualSynchronizationRequiredException ex)
                 {
                     Logger.Error(ex, "ManualSynchronizationRequiredException");
-                    await HandleRequest(SaveGame(newEntity, cancellationToken));
+                    return await HandleRequest(SaveGame(newEntity, cancellationToken));
                 }
             }
+
+            return null;
         }
 
         public async Task DeleteGame(Game category, CancellationToken cancellationToken = default)

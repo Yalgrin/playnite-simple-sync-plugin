@@ -6,6 +6,7 @@ using Playnite.SDK;
 using Playnite.SDK.Models;
 using SimpleSyncPlugin.Models;
 using SimpleSyncPlugin.Settings;
+using SimpleSyncPlugin.Threading;
 
 namespace SimpleSyncPlugin.Services.Synchronizers
 {
@@ -16,7 +17,9 @@ namespace SimpleSyncPlugin.Services.Synchronizers
         private readonly SyncBackendService _syncBackendService;
 
         public FilterPresetSynchronizer(IPlayniteAPI api, SimpleSyncPluginSettingsViewModel settingsViewModel,
-            SyncBackendService syncBackendService) : base(api, settingsViewModel)
+            DataProcessingBroker dataProcessingBroker, DataProcessingService dataProcessingService,
+            SyncBackendService syncBackendService) : base(api, settingsViewModel, dataProcessingBroker,
+            dataProcessingService)
         {
             _syncBackendService = syncBackendService;
         }
@@ -104,16 +107,31 @@ namespace SimpleSyncPlugin.Services.Synchronizers
                                             oldDataValues.Any(newDataValues.Contains));
         }
 
-        protected override Task SaveObject(FilterPreset entity, CancellationToken cancellationToken = default)
+        public override async Task SaveObject(object entity, CancellationToken cancellationToken = default)
         {
-            Logger.Trace($"Saving filter preset with id = {entity.Id}");
-            return _syncBackendService.SaveFilterPreset(entity, cancellationToken);
+            if (!(entity is FilterPreset filterPreset))
+            {
+                return;
+            }
+
+            Logger.Trace($"Saving filterPreset with id = {filterPreset.Id}");
+            var savedObject = await _syncBackendService.SaveFilterPreset(filterPreset, cancellationToken);
+            if (savedObject.Id != filterPreset.Id.ToString())
+            {
+                Logger.Debug($"FilterPreset id mismatch: saved id = {savedObject.Id}, entity id = {filterPreset.Id}");
+                _dataProcessingService.ProcessIdMismatch(GetHandledType(), savedObject);
+            }
         }
 
-        protected override Task DeleteObject(FilterPreset entity, CancellationToken cancellationToken = default)
+        public override Task DeleteObject(object entity, CancellationToken cancellationToken = default)
         {
-            Logger.Trace($"Deleting filter preset with id = {entity.Id}");
-            return _syncBackendService.DeleteFilterPreset(entity, cancellationToken);
+            if (!(entity is FilterPreset filterPreset))
+            {
+                return Task.CompletedTask;
+            }
+
+            Logger.Trace($"Deleting filter preset with id = {filterPreset.Id}");
+            return _syncBackendService.DeleteFilterPreset(filterPreset, cancellationToken);
         }
 
         public override ObjectType GetHandledType()

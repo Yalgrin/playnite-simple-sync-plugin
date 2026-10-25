@@ -15,6 +15,8 @@
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_Settings_InvalidRegistration">Invalid registration! Consider registering again.</sys:String>
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_Settings_NoSession">No session active.</sys:String>
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_Settings_SessionExists">Session active.</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Settings_ServerVersion">Server version: {0}</sys:String>
+    <sys:String x:Key="LOC_Yalgrin_SimpleSync_Settings_ServerVersionUnknown">Unknown server version!</sys:String>
     <sys:String x:Key="LOC_Yalgrin_SimpleSync_Settings_Warning" xml:space="preserve">WARNING! READ ME FIRST!
 
 When first connecting to the sync server, it is recommended to keep the checkboxes above unchecked and manually do a full fetch and sync using the options in the main menu -> Extensions -> Simple Sync. You can enable the options above afterwards.

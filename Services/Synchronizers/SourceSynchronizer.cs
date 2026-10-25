@@ -4,6 +4,7 @@ using Playnite.SDK;
 using Playnite.SDK.Models;
 using SimpleSyncPlugin.Models;
 using SimpleSyncPlugin.Settings;
+using SimpleSyncPlugin.Threading;
 
 namespace SimpleSyncPlugin.Services.Synchronizers
 {
@@ -14,7 +15,9 @@ namespace SimpleSyncPlugin.Services.Synchronizers
         private readonly SyncBackendService _syncBackendService;
 
         public SourceSynchronizer(IPlayniteAPI api, SimpleSyncPluginSettingsViewModel settingsViewModel,
-            SyncBackendService syncBackendService) : base(api, settingsViewModel)
+            DataProcessingBroker dataProcessingBroker, DataProcessingService dataProcessingService,
+            SyncBackendService syncBackendService) : base(api, settingsViewModel, dataProcessingBroker,
+            dataProcessingService)
         {
             _syncBackendService = syncBackendService;
         }
@@ -24,16 +27,31 @@ namespace SimpleSyncPlugin.Services.Synchronizers
             return db.Sources;
         }
 
-        protected override Task SaveObject(GameSource entity, CancellationToken cancellationToken = default)
+        public override async Task SaveObject(object entity, CancellationToken cancellationToken = default)
         {
-            Logger.Trace($"Saving source with id = {entity.Id}");
-            return _syncBackendService.SaveSource(entity, cancellationToken);
+            if (!(entity is GameSource source))
+            {
+                return;
+            }
+
+            Logger.Trace($"Saving source with id = {source.Id}");
+            var savedObject = await _syncBackendService.SaveSource(source, cancellationToken);
+            if (savedObject.Id != source.Id.ToString())
+            {
+                Logger.Debug($"Source id mismatch: saved id = {savedObject.Id}, entity id = {source.Id}");
+                _dataProcessingService.ProcessIdMismatch(GetHandledType(), savedObject);
+            }
         }
 
-        protected override Task DeleteObject(GameSource entity, CancellationToken cancellationToken = default)
+        public override Task DeleteObject(object entity, CancellationToken cancellationToken = default)
         {
-            Logger.Trace($"Deleting source with id = {entity.Id}");
-            return _syncBackendService.DeleteSource(entity, cancellationToken);
+            if (!(entity is GameSource source))
+            {
+                return Task.CompletedTask;
+            }
+
+            Logger.Trace($"Deleting source with id = {source.Id}");
+            return _syncBackendService.DeleteSource(source, cancellationToken);
         }
 
         public override ObjectType GetHandledType()

@@ -8,6 +8,7 @@ using Playnite.SDK.Models;
 using SimpleSyncPlugin.Extensions;
 using SimpleSyncPlugin.Models;
 using SimpleSyncPlugin.Settings;
+using SimpleSyncPlugin.Threading;
 
 namespace SimpleSyncPlugin.Services.Synchronizers
 {
@@ -20,88 +21,107 @@ namespace SimpleSyncPlugin.Services.Synchronizers
 
         protected readonly IPlayniteAPI _api;
         protected readonly SimpleSyncPluginSettingsViewModel _settingsViewModel;
+        protected readonly DataProcessingBroker DataProcessingBroker;
+        protected readonly DataProcessingService _dataProcessingService;
 
         private readonly Dictionary<Guid, DateTime> _gracePeriodMap = new Dictionary<Guid, DateTime>();
 
-        protected AbstractSynchronizer(IPlayniteAPI api, SimpleSyncPluginSettingsViewModel settingsViewModel)
+        protected AbstractSynchronizer(IPlayniteAPI api, SimpleSyncPluginSettingsViewModel settingsViewModel,
+            DataProcessingBroker dataProcessingBroker, DataProcessingService dataProcessingService)
         {
             _api = api;
             _settingsViewModel = settingsViewModel;
+            DataProcessingBroker = dataProcessingBroker;
+            _dataProcessingService = dataProcessingService;
         }
 
         public virtual void RegisterListeners()
         {
             var databaseCollection = GetDatabaseCollection(_api.Database);
-            databaseCollection.ItemCollectionChanged += async (sender, args) =>
+            databaseCollection.ItemCollectionChanged += (sender, args) =>
             {
                 if (!_settingsViewModel.Settings.SendLiveChanges)
                 {
                     return;
                 }
 
-                try
-                {
-                    foreach (var removedItem in args.RemovedItems)
-                    {
-                        if (IsNotInGracePeriod(removedItem.Id))
-                        {
-                            await DeleteObject(removedItem);
-                        }
-                        else
-                        {
-                            Logger.Trace($"Item {removedItem.Id} is in grace period, skipping...");
-                        }
-                    }
+                var removedItems = args.RemovedItems.ToList();
+                var addedItems = args.AddedItems.ToList();
 
-                    foreach (var addedItem in args.AddedItems)
-                    {
-                        if (IsNotInGracePeriod(addedItem.Id))
-                        {
-                            await SaveObject(addedItem);
-                        }
-                        else
-                        {
-                            Logger.Trace($"Item {addedItem.Id} is in grace period, skipping...");
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error(ex, "Error occurred while saving new or removed objects!");
-                    _api.Notifications.Add(new NotificationMessage(ItemCollectionSaveErrorId,
-                        string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_ItemCollectionSaveError"),
-                            ex.Message), NotificationType.Error));
-                }
+                var handledType = GetHandledType();
+                DataProcessingBroker.SubmitObjectDeleteList(handledType, removedItems);
+                DataProcessingBroker.SubmitObjectSaveList(handledType, addedItems);
+
+                // try
+                // {
+                //     foreach (var removedItem in removedItems)
+                //     {
+                //         if (IsNotInGracePeriod(removedItem.Id))
+                //         {
+                //             await DeleteObject(removedItem);
+                //         }
+                //         else
+                //         {
+                //             Logger.Trace($"Item {removedItem.Id} is in grace period, skipping...");
+                //         }
+                //     }
+                //
+                //     foreach (var addedItem in addedItems)
+                //     {
+                //         if (IsNotInGracePeriod(addedItem.Id))
+                //         {
+                //             await SaveObject(addedItem);
+                //         }
+                //         else
+                //         {
+                //             Logger.Trace($"Item {addedItem.Id} is in grace period, skipping...");
+                //         }
+                //     }
+                // }
+                // catch (Exception ex)
+                // {
+                //     Logger.Error(ex, "Error occurred while saving new or removed objects!");
+                //     _api.Notifications.Add(new NotificationMessage(ItemCollectionSaveErrorId,
+                //         string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_ItemCollectionSaveError"),
+                //             ex.Message), NotificationType.Error));
+                // }
             };
 
-            databaseCollection.ItemUpdated += async (sender, args) =>
+            databaseCollection.ItemUpdated += (sender, args) =>
             {
                 if (!_settingsViewModel.Settings.SendLiveChanges)
                 {
                     return;
                 }
 
-                try
+                var updatedItems = args.UpdatedItems.ToArray();
+                var handledType = GetHandledType();
+                foreach (var e in updatedItems)
                 {
-                    foreach (var updatedItem in args.UpdatedItems.Where(HasObjectChanged))
-                    {
-                        if (IsNotInGracePeriod(updatedItem.NewData.Id))
-                        {
-                            await SaveObject(updatedItem.NewData);
-                        }
-                        else
-                        {
-                            Logger.Trace($"Item {updatedItem.NewData.Id} is in grace period, skipping...");
-                        }
-                    }
+                    DataProcessingBroker.SubmitObjectSaveDiff(handledType, e.OldData, e.NewData);
                 }
-                catch (Exception ex)
-                {
-                    Logger.Error(ex, "Error occurred while saving updated objects!");
-                    _api.Notifications.Add(new NotificationMessage(ItemUpdatedSaveErrorId,
-                        string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_ItemUpdateSaveError"),
-                            ex.Message), NotificationType.Error));
-                }
+
+                // try
+                // {
+                //     foreach (var updatedItem in updatedItems.Where(HasObjectChanged))
+                //     {
+                //         if (IsNotInGracePeriod(updatedItem.NewData.Id))
+                //         {
+                //             await SaveObject(updatedItem.NewData);
+                //         }
+                //         else
+                //         {
+                //             Logger.Trace($"Item {updatedItem.NewData.Id} is in grace period, skipping...");
+                //         }
+                //     }
+                // }
+                // catch (Exception ex)
+                // {
+                //     Logger.Error(ex, "Error occurred while saving updated objects!");
+                //     _api.Notifications.Add(new NotificationMessage(ItemUpdatedSaveErrorId,
+                //         string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Error_ItemUpdateSaveError"),
+                //             ex.Message), NotificationType.Error));
+                // }
             };
         }
 
@@ -129,9 +149,21 @@ namespace SimpleSyncPlugin.Services.Synchronizers
             return GetDatabaseCollection(db).OrderBy(o => o.Name).ToList();
         }
 
-        protected abstract Task SaveObject(TEntity entity, CancellationToken cancellationToken = default);
+        public abstract Task SaveObject(object entity, CancellationToken cancellationToken = default);
 
-        protected abstract Task DeleteObject(TEntity entity, CancellationToken cancellationToken = default);
+        public Task SaveObjectById(Guid id, CancellationToken cancellationToken = default)
+        {
+            var entity = GetDatabaseCollection(_api.Database).Get(id);
+            return entity != null ? SaveObject(entity, cancellationToken) : Task.CompletedTask;
+        }
+
+        public virtual Task SaveDiffObject(object oldEntity, object newEntity,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public abstract Task DeleteObject(object entity, CancellationToken cancellationToken = default);
 
         protected virtual bool HasObjectChanged(ItemUpdateEvent<TEntity> args)
         {

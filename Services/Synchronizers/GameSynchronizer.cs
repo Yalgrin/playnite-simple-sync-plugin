@@ -8,6 +8,7 @@ using Playnite.SDK;
 using Playnite.SDK.Models;
 using SimpleSyncPlugin.Models;
 using SimpleSyncPlugin.Settings;
+using SimpleSyncPlugin.Threading;
 
 namespace SimpleSyncPlugin.Services.Synchronizers
 {
@@ -18,7 +19,9 @@ namespace SimpleSyncPlugin.Services.Synchronizers
         private readonly SyncBackendService _syncBackendService;
 
         public GameSynchronizer(IPlayniteAPI api, SimpleSyncPluginSettingsViewModel settingsViewModel,
-            SyncBackendService syncBackendService) : base(api, settingsViewModel)
+            DataProcessingBroker dataProcessingBroker, DataProcessingService dataProcessingService,
+            SyncBackendService syncBackendService) : base(api, settingsViewModel, dataProcessingBroker,
+            dataProcessingService)
         {
             _syncBackendService = syncBackendService;
         }
@@ -37,25 +40,55 @@ namespace SimpleSyncPlugin.Services.Synchronizers
                 .ToList();
         }
 
-        protected override Task SaveObject(Game entity, CancellationToken cancellationToken = default)
+        public override async Task SaveObject(object entity, CancellationToken cancellationToken = default)
         {
-            Logger.Trace($"Saving game with id = {entity.Id}, gameId = {entity.GameId}, pluginId = {entity.PluginId}");
-            return _syncBackendService.SaveGame(entity, cancellationToken);
+            if (!(entity is Game game))
+            {
+                return;
+            }
+
+            Logger.Trace($"Saving game with id = {game.Id}, gameId = {game.GameId}, pluginId = {game.PluginId}");
+            var savedObject = await _syncBackendService.SaveGame(game, cancellationToken);
+            if (savedObject.Id != game.Id.ToString())
+            {
+                Logger.Debug($"Game id mismatch: saved id = {savedObject.Id}, entity id = {game.Id}");
+                _dataProcessingService.ProcessIdMismatch(GetHandledType(), savedObject);
+            }
         }
 
-        protected override Task SaveDiffObject(Game oldEntity, Game newEntity,
+        public override async Task SaveDiffObject(object oldEntity, object newEntity,
             CancellationToken cancellationToken = default)
         {
+            if (!(oldEntity is Game oldGame))
+            {
+                return;
+            }
+
+            if (!(newEntity is Game newGame))
+            {
+                return;
+            }
+
             Logger.Trace(
-                $"Saving game diff with id = {newEntity.Id}, gameId = {newEntity.GameId}, pluginId = {newEntity.PluginId}");
-            return _syncBackendService.SaveGameDiff(oldEntity, newEntity, cancellationToken);
+                $"Saving game diff with id = {newGame.Id}, gameId = {newGame.GameId}, pluginId = {newGame.PluginId}");
+            var savedObject = await _syncBackendService.SaveGameDiff(oldGame, newGame, cancellationToken);
+            if (savedObject.Id != newGame.Id.ToString())
+            {
+                Logger.Debug($"Game id mismatch: saved id = {savedObject.Id}, entity id = {newGame.Id}");
+                _dataProcessingService.ProcessIdMismatch(GetHandledType(), savedObject);
+            }
         }
 
-        protected override Task DeleteObject(Game entity, CancellationToken cancellationToken = default)
+        public override Task DeleteObject(object entity, CancellationToken cancellationToken = default)
         {
+            if (!(entity is Game game))
+            {
+                return Task.CompletedTask;
+            }
+
             Logger.Trace(
-                $"Deleting game with id = {entity.Id}, gameId = {entity.GameId}, pluginId = {entity.PluginId}");
-            return _syncBackendService.DeleteGame(entity, cancellationToken);
+                $"Deleting game with id = {game.Id}, gameId = {game.GameId}, pluginId = {game.PluginId}");
+            return _syncBackendService.DeleteGame(game, cancellationToken);
         }
 
         public override ObjectType GetHandledType()

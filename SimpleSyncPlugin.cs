@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Windows.Controls;
 using Playnite.SDK;
 using Playnite.SDK.Events;
@@ -18,11 +19,13 @@ namespace SimpleSyncPlugin
         private static readonly ILogger Logger = LogManager.GetLogger();
 
         private SimpleSyncPluginSettingsViewModel Settings { get; }
-        private DataProcessingThread DataProcessingThread { get; set; }
+        private DataProcessingBroker DataProcessingBroker { get; set; }
         private ServerConnectionThread ServerConnectionThread { get; set; }
         private SyncBackendService SyncBackendService { get; }
         private DataProcessingService DataProcessingService { get; }
         private DataSynchronizationService DataSynchronizationService { get; }
+        private SimpleSyncWorker Worker { get; }
+        private bool GameAdditionAllowed { get; set; }
 
         public override Guid Id { get; } = Guid.Parse("9780d304-9b7e-4f83-bd8c-e1838dae2f2e");
 
@@ -35,11 +38,53 @@ namespace SimpleSyncPlugin
             };
 
             Logger.Info("Initializing SimpleSyncPlugin...");
+            GameAdditionAllowed = true;
+            Worker = new SimpleSyncWorker();
+            RegisterMainViewListener(api);
             SyncBackendService = new SyncBackendService(api, Settings);
-            DataSynchronizationService = new DataSynchronizationService(api, Settings, SyncBackendService);
+            DataSynchronizationService = new DataSynchronizationService(api, Settings, SyncBackendService, Worker);
             DataProcessingService =
-                new DataProcessingService(api, Settings, SyncBackendService, DataSynchronizationService);
+                new DataProcessingService(api, Settings, SyncBackendService, DataSynchronizationService, Worker);
+            DataProcessingBroker = new DataProcessingBroker(DataProcessingService, DataSynchronizationService, Worker);
+            DataSynchronizationService.Initialize(DataProcessingBroker, DataProcessingService);
             DataSynchronizationService.RegisterListeners();
+        }
+
+        private void RegisterMainViewListener(IPlayniteAPI api)
+        {
+            try
+            {
+                var mainView = api.MainView;
+                var mainModelField = mainView?.GetType().GetField(
+                    "mainModel", BindingFlags.Instance | BindingFlags.NonPublic);
+                var mainModel = mainModelField?.GetValue(mainView) as ObservableObject;
+                var allowedProperty = mainModel?.GetType().GetProperty(
+                    "GameAdditionAllowed", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+                if (allowedProperty != null && allowedProperty.PropertyType == typeof(bool))
+                {
+                    mainModel.PropertyChanged += (sender, args) =>
+                    {
+                        GameAdditionAllowed = (bool)allowedProperty.GetValue(mainModel);
+                        if (GameAdditionAllowed)
+                        {
+                            Worker.Resume();
+                        }
+                        else
+                        {
+                            Worker.Pause();
+                        }
+                    };
+                }
+                else
+                {
+                    Logger.Warn("Unable to observe GameAdditionAllowed: mainModel or property was not found.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"Unable to observe GameAdditionAllowed: {ex}");
+            }
         }
 
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
@@ -48,18 +93,12 @@ namespace SimpleSyncPlugin
             if (Settings.Settings.SynchronizationEnabled && Settings.Settings.FetchChangesAtStartup)
             {
                 ActivateProgressBag("LOC_Yalgrin_SimpleSync_Dialogs_Fetch",
-                    progArgs =>
-                    {
-                        FetchWithLocks(() =>
-                            DataProcessingService.FetchRemainingChanges(progArgs).GetAwaiter().GetResult());
-                    });
+                    progArgs => { DataProcessingService.FetchRemainingChanges(progArgs).GetAwaiter().GetResult(); });
             }
 
-            Logger.Info("Starting processing and fetch threads...");
-            DataProcessingThread = new DataProcessingThread(DataProcessingService);
-            DataProcessingThread.Start();
+            Logger.Info("Starting connection thread...");
             ServerConnectionThread =
-                new ServerConnectionThread(DataProcessingThread, SyncBackendService, Settings, PlayniteApi);
+                new ServerConnectionThread(DataProcessingBroker, SyncBackendService, Settings, PlayniteApi);
             ServerConnectionThread.Start();
         }
 
@@ -85,7 +124,8 @@ namespace SimpleSyncPlugin
                                 SessionManager.CurrentSession = new SessionInfo
                                 {
                                     InvalidRegistration = true,
-                                    SessionId = SessionManager.CurrentSession?.SessionId
+                                    SessionId = SessionManager.CurrentSession?.SessionId,
+                                    ServerVersion = SessionManager.CurrentSession?.ServerVersion
                                 };
                             }
 
@@ -113,23 +153,23 @@ namespace SimpleSyncPlugin
                             Logger.Warn("No result returned. Is the sync server configured?");
                         }
                     }
-                    catch (AuthException ex)
+                    catch (SecurityException ex)
                     {
                         Logger.Error(ex, "Exception while checking the connection!");
 
-                        if (ex.Message == "AuthException.CLIENT_ALREADY_REGISTERED")
+                        if (ex.Message == "SecurityException.CLIENT_ALREADY_REGISTERED")
                         {
                             PlayniteApi.Dialogs.ShowErrorMessage(
                                 "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_ClientAlreadyConnected",
                                 "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_Error");
                         }
-                        else if (ex.Message == "AuthException.MISSING_REGISTRATION")
+                        else if (ex.Message == "SecurityException.MISSING_REGISTRATION")
                         {
                             PlayniteApi.Dialogs.ShowErrorMessage(
                                 "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_MissingRegistration",
                                 "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_Error");
                         }
-                        else if (ex.Message == "AuthException.INVALID_REGISTRATION")
+                        else if (ex.Message == "SecurityException.INVALID_REGISTRATION")
                         {
                             PlayniteApi.Dialogs.ShowErrorMessage(
                                 "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_InvalidRegistration",
@@ -156,22 +196,9 @@ namespace SimpleSyncPlugin
                 });
         }
 
-        private void FetchWithLocks(Action action)
-        {
-            try
-            {
-                DataProcessingThread?.LockForProcessing();
-                action.Invoke();
-            }
-            finally
-            {
-                DataProcessingThread?.UnlockForProcessing();
-            }
-        }
-
         public override void OnApplicationStopped(OnApplicationStoppedEventArgs args)
         {
-            DataProcessingThread?.Shutdown();
+            Worker?.StopAsync().GetAwaiter().GetResult();
             ServerConnectionThread?.Shutdown();
         }
 
@@ -271,7 +298,7 @@ namespace SimpleSyncPlugin
         private MainMenuItem AddFetchOption(string label, Action<GlobalProgressActionArgs> action)
         {
             return AddProgressBarOption(label, "LOC_Yalgrin_SimpleSync_Dialogs_Fetch",
-                progArgs => FetchWithLocks(() => action.Invoke(progArgs)));
+                action.Invoke);
         }
 
         private MainMenuItem AddProgressBarOption(string label, string progressBarLabel,

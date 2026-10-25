@@ -105,7 +105,7 @@ namespace SimpleSyncPlugin.Services
             return DoJsonRequest(HttpMethod.Post, "/api/client/disable-change-stream", cancellationToken);
         }
 
-        public Task SaveLibraryPlugin(LibraryPluginDto dto, string icon, string backgroundImage,
+        public Task<LibraryPluginDto> SaveLibraryPlugin(LibraryPluginDto dto, string icon, string backgroundImage,
             CancellationToken cancellationToken = default)
         {
             return SaveObjectWithMetadata(dto, "library-plugin", icon, null, backgroundImage, cancellationToken);
@@ -116,7 +116,7 @@ namespace SimpleSyncPlugin.Services
             return GetObject<CategoryDto>(id, "category", cancellationToken);
         }
 
-        public Task SaveCategory(CategoryDto dto, CancellationToken cancellationToken = default)
+        public Task<CategoryDto> SaveCategory(CategoryDto dto, CancellationToken cancellationToken = default)
         {
             return SaveObject(dto, "category", cancellationToken);
         }
@@ -131,7 +131,7 @@ namespace SimpleSyncPlugin.Services
             return GetObject<GenreDto>(id, "genre", cancellationToken);
         }
 
-        public Task SaveGenre(GenreDto dto, CancellationToken cancellationToken = default)
+        public Task<GenreDto> SaveGenre(GenreDto dto, CancellationToken cancellationToken = default)
         {
             return SaveObject(dto, "genre", cancellationToken);
         }
@@ -157,16 +157,18 @@ namespace SimpleSyncPlugin.Services
             return GetMetadata(id, filename, "platform-metadata", cancellationToken);
         }
 
-        public Task SavePlatform(PlatformDto dto, string icon, string coverImage, string backgroundImage,
+        public Task<PlatformDto> SavePlatform(PlatformDto dto, string icon, string coverImage, string backgroundImage,
             CancellationToken cancellationToken = default)
         {
             return SaveObjectWithMetadata(dto, "platform", icon, coverImage, backgroundImage, cancellationToken);
         }
 
-        public Task SavePlatformDiff(PlatformDiffDto dto, string icon, string coverImage, string backgroundImage,
+        public Task<PlatformDto> SavePlatformDiff(PlatformDiffDto dto, string icon, string coverImage,
+            string backgroundImage,
             CancellationToken cancellationToken = default)
         {
-            return SaveObjectDiffWithMetadata(dto, "platform-diff", icon, coverImage, backgroundImage,
+            return SaveObjectDiffWithMetadata<PlatformDiffDto, PlatformDto>(dto, "platform-diff", icon, coverImage,
+                backgroundImage,
                 cancellationToken);
         }
 
@@ -180,7 +182,7 @@ namespace SimpleSyncPlugin.Services
             return GetObject<CompanyDto>(id, "company", cancellationToken);
         }
 
-        public Task SaveCompany(CompanyDto dto, CancellationToken cancellationToken = default)
+        public Task<CompanyDto> SaveCompany(CompanyDto dto, CancellationToken cancellationToken = default)
         {
             return SaveObject(dto, "company", cancellationToken);
         }
@@ -195,7 +197,7 @@ namespace SimpleSyncPlugin.Services
             return GetObject<FeatureDto>(id, "feature", cancellationToken);
         }
 
-        public Task SaveFeature(FeatureDto dto, CancellationToken cancellationToken = default)
+        public Task<FeatureDto> SaveFeature(FeatureDto dto, CancellationToken cancellationToken = default)
         {
             return SaveObject(dto, "feature", cancellationToken);
         }
@@ -210,7 +212,7 @@ namespace SimpleSyncPlugin.Services
             return GetObject<TagDto>(id, "tag", cancellationToken);
         }
 
-        public Task SaveTag(TagDto dto, CancellationToken cancellationToken = default)
+        public Task<TagDto> SaveTag(TagDto dto, CancellationToken cancellationToken = default)
         {
             return SaveObject(dto, "tag", cancellationToken);
         }
@@ -225,7 +227,7 @@ namespace SimpleSyncPlugin.Services
             return GetObject<SeriesDto>(id, "series", cancellationToken);
         }
 
-        public Task SaveSeries(SeriesDto dto, CancellationToken cancellationToken = default)
+        public Task<SeriesDto> SaveSeries(SeriesDto dto, CancellationToken cancellationToken = default)
         {
             return SaveObject(dto, "series", cancellationToken);
         }
@@ -240,7 +242,7 @@ namespace SimpleSyncPlugin.Services
             return GetObject<AgeRatingDto>(id, "age-rating", cancellationToken);
         }
 
-        public Task SaveAgeRating(AgeRatingDto dto, CancellationToken cancellationToken = default)
+        public Task<AgeRatingDto> SaveAgeRating(AgeRatingDto dto, CancellationToken cancellationToken = default)
         {
             return SaveObject(dto, "age-rating", cancellationToken);
         }
@@ -255,7 +257,7 @@ namespace SimpleSyncPlugin.Services
             return GetObject<RegionDto>(id, "region", cancellationToken);
         }
 
-        public Task SaveRegion(RegionDto dto, CancellationToken cancellationToken = default)
+        public Task<RegionDto> SaveRegion(RegionDto dto, CancellationToken cancellationToken = default)
         {
             return SaveObject(dto, "region", cancellationToken);
         }
@@ -270,7 +272,7 @@ namespace SimpleSyncPlugin.Services
             return GetObject<SourceDto>(id, "source", cancellationToken);
         }
 
-        public Task SaveSource(SourceDto dto, CancellationToken cancellationToken = default)
+        public Task<SourceDto> SaveSource(SourceDto dto, CancellationToken cancellationToken = default)
         {
             return SaveObject(dto, "source", cancellationToken);
         }
@@ -285,7 +287,8 @@ namespace SimpleSyncPlugin.Services
             return GetObject<CompletionStatusDto>(id, "completion-status", cancellationToken);
         }
 
-        public Task SaveCompletionStatus(CompletionStatusDto dto, CancellationToken cancellationToken = default)
+        public Task<CompletionStatusDto> SaveCompletionStatus(CompletionStatusDto dto,
+            CancellationToken cancellationToken = default)
         {
             return SaveObject(dto, "completion-status", cancellationToken);
         }
@@ -300,7 +303,8 @@ namespace SimpleSyncPlugin.Services
             return GetObject<FilterPresetDto>(id, "filter-preset", cancellationToken);
         }
 
-        public Task SaveFilterPreset(FilterPresetDto dto, CancellationToken cancellationToken = default)
+        public Task<FilterPresetDto> SaveFilterPreset(FilterPresetDto dto,
+            CancellationToken cancellationToken = default)
         {
             return SaveObject(dto, "filter-preset", cancellationToken);
         }
@@ -326,16 +330,17 @@ namespace SimpleSyncPlugin.Services
             return GetMetadata(id, filename, "game-metadata", cancellationToken);
         }
 
-        public Task SaveGame(GameDto dto, string icon, string coverImage, string backgroundImage,
+        public Task<GameDto> SaveGame(GameDto dto, string icon, string coverImage, string backgroundImage,
             CancellationToken cancellationToken = default)
         {
             return SaveObjectWithMetadata(dto, "game", icon, coverImage, backgroundImage, cancellationToken);
         }
 
-        public Task SaveGameDiff(GameDiffDto dto, string icon, string coverImage, string backgroundImage,
+        public Task<GameDto> SaveGameDiff(GameDiffDto dto, string icon, string coverImage, string backgroundImage,
             CancellationToken cancellationToken = default)
         {
-            return SaveObjectDiffWithMetadata(dto, "game-diff", icon, coverImage, backgroundImage, cancellationToken);
+            return SaveObjectDiffWithMetadata<GameDiffDto, GameDto>(dto, "game-diff", icon, coverImage, backgroundImage,
+                cancellationToken);
         }
 
         public Task DeleteGame(GameDto dto, CancellationToken cancellationToken = default)
@@ -384,14 +389,14 @@ namespace SimpleSyncPlugin.Services
             return DoMetadataRequest(HttpMethod.Get, $"/api/{objectPath}/{id}/{filename}", cancellationToken);
         }
 
-        private Task SaveObject<T>(T entity, string objectPath, CancellationToken cancellationToken = default)
+        private Task<T> SaveObject<T>(T entity, string objectPath, CancellationToken cancellationToken = default)
             where T : AbstractDto
         {
             Logger.Debug($"Saving object \"{objectPath}\" with id = \"{entity.Id}\"");
-            return DoJsonRequest(HttpMethod.Post, $"/api/{objectPath}/save", cancellationToken, entity);
+            return DoJsonRequest<T>(HttpMethod.Post, $"/api/{objectPath}/save", cancellationToken, entity);
         }
 
-        private Task SaveObjectWithMetadata<T>(T dto,
+        private Task<T> SaveObjectWithMetadata<T>(T dto,
             string objectPath, string icon, string coverImage, string backgroundImage,
             CancellationToken cancellationToken = default) where T : AbstractDto
         {
@@ -401,13 +406,13 @@ namespace SimpleSyncPlugin.Services
             AddFileToMultipartRequest(content, icon, "Icon");
             AddFileToMultipartRequest(content, coverImage, "CoverImage");
             AddFileToMultipartRequest(content, backgroundImage, "BackgroundImage");
-            return DoRequest(HttpMethod.Post, $"/api/{objectPath}/save", cancellationToken, content);
+            return DoJsonRequest<T>(HttpMethod.Post, $"/api/{objectPath}/save", cancellationToken, content);
         }
 
         private void AddFileToMultipartRequest(MultipartFormDataContent multipartContent, string localFileName,
             string metadataName)
         {
-            if (localFileName == null)
+            if (string.IsNullOrEmpty(localFileName))
             {
                 return;
             }
@@ -425,9 +430,9 @@ namespace SimpleSyncPlugin.Services
             }
         }
 
-        private Task SaveObjectDiffWithMetadata<T>(T dto,
+        private Task<TR> SaveObjectDiffWithMetadata<T, TR>(T dto,
             string objectPath, string icon, string coverImage, string backgroundImage,
-            CancellationToken cancellationToken = default) where T : AbstractDiffDto
+            CancellationToken cancellationToken = default) where T : AbstractDiffDto where TR : AbstractDto
         {
             Logger.Debug($"Saving object diff \"{objectPath}\" with id = \"{dto.Id}\" including metadata");
             var content = new MultipartFormDataContent();
@@ -435,7 +440,7 @@ namespace SimpleSyncPlugin.Services
             AddMetadataToDiffMultipartRequest(content, dto, icon, "Icon");
             AddMetadataToDiffMultipartRequest(content, dto, coverImage, "CoverImage");
             AddMetadataToDiffMultipartRequest(content, dto, backgroundImage, "BackgroundImage");
-            return DoRequest(HttpMethod.Post, $"/api/{objectPath}/save", cancellationToken, content);
+            return DoJsonRequest<TR>(HttpMethod.Post, $"/api/{objectPath}/save", cancellationToken, content);
         }
 
         private void AddMetadataToDiffMultipartRequest(MultipartFormDataContent multipartContent,
@@ -577,9 +582,16 @@ namespace SimpleSyncPlugin.Services
             await TryToExtractError(response);
         }
 
+        private Task<T> DoJsonRequest<T>(HttpMethod method, string uri,
+            CancellationToken cancellationToken,
+            object bodyObject) where T : class
+        {
+            return DoJsonRequest<T>(method, uri, cancellationToken, CreateJsonContent(bodyObject));
+        }
+
         private async Task<T> DoJsonRequest<T>(HttpMethod method, string uri,
             CancellationToken cancellationToken = default,
-            object bodyObject = null) where T : class
+            HttpContent content = null) where T : class
         {
             var request = new HttpRequestMessage(method, uri);
             var sessionId = SessionManager.CurrentSession?.SessionId;
@@ -588,9 +600,9 @@ namespace SimpleSyncPlugin.Services
                 request.Headers.Add(HeaderSession, sessionId);
             }
 
-            if (bodyObject != null)
+            if (content != null)
             {
-                request.Content = CreateJsonContent(bodyObject);
+                request.Content = content;
             }
 
             HttpResponseMessage response;
@@ -642,6 +654,11 @@ namespace SimpleSyncPlugin.Services
 
         private static StringContent CreateJsonContent<T>(T dto) where T : class
         {
+            if (dto == null)
+            {
+                return null;
+            }
+
             var contentToSave = SerializeObject(dto);
             return new StringContent(
                 contentToSave,
@@ -665,7 +682,7 @@ namespace SimpleSyncPlugin.Services
             else if (response.StatusCode == HttpStatusCode.Unauthorized ||
                      response.StatusCode == HttpStatusCode.Forbidden)
             {
-                throw new AuthException(error?.Message ?? "");
+                throw new SecurityException(error?.Message ?? "");
             }
 
             throw new HttpStatusException(response.StatusCode, error?.Message ?? "Unexpected error!");

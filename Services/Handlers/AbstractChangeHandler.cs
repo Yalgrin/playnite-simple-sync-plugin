@@ -37,6 +37,35 @@ namespace SimpleSyncPlugin.Services.Handlers
             await DoHandleSave(objectDto, dto.ObjectId);
         }
 
+        public Task HandleReassignedId(object obj)
+        {
+            if (!(obj is TDto objectDto))
+            {
+                return Task.CompletedTask;
+            }
+
+            var db = _api.Database;
+            var databaseCollection = GetDatabaseCollection(db);
+
+            TEntity oldEntity = null;
+            var reassignIds = false;
+            var isNew = false;
+
+            var entity = FindDatabaseObject(databaseCollection, objectDto, ref oldEntity, ref reassignIds, ref isNew);
+
+            var isChanged = isNew || HasEntityBeenChanged(entity, objectDto);
+
+            Logger.Trace($"HandleReassignedId > isNew: {isNew}, reassignIds: {reassignIds}, isChanged: {isChanged}");
+            if (!isChanged)
+            {
+                Logger.Info($"Object {GetHandledType()} with id = {entity.Id} has not been changed, skipping...");
+                return Task.CompletedTask;
+            }
+
+            ReassignIdsAndRemoveOldEntity(db, isNew, entity, databaseCollection, reassignIds, oldEntity, objectDto);
+            return Task.CompletedTask;
+        }
+
         internal Task DoHandleSave(TDto objectDto, long objectId)
         {
             return objectDto.Removed ? HandleObjectRemoval(objectDto) : HandleObjectSave(objectDto, objectId);
@@ -76,7 +105,7 @@ namespace SimpleSyncPlugin.Services.Handlers
             var isChanged = isNew || HasEntityBeenChanged(entity, objectDto);
             _mapper.FillEntity(entity, objectDto);
 
-            Logger.Trace($"HandleChange > isNew: {isNew},  reassignIds: {reassignIds}, isChanged: {isChanged}");
+            Logger.Trace($"HandleChange > isNew: {isNew}, reassignIds: {reassignIds}, isChanged: {isChanged}");
             if (!isChanged)
             {
                 Logger.Info($"Object {GetHandledType()} with id = {entity.Id} has not been changed, skipping...");
@@ -126,17 +155,48 @@ namespace SimpleSyncPlugin.Services.Handlers
                     databaseCollection.Update(entity);
                 }
 
-                if (reassignIds)
-                {
-                    Logger.Info(
-                        $"Going to reassign ids from {oldEntity.Id} to {entity.Id} for object with type {GetHandledType()}...");
-                    HandleReassigningIds(oldEntity, entity, db);
-
-                    Logger.Trace($"Removing old object {GetHandledType()} with id {oldEntity.Id}...");
-                    _dataSynchronizationService.RegisterGracePeriod(GetHandledType(), oldEntity.Id);
-                    databaseCollection.Remove(oldEntity);
-                }
+                DoReassignIdsAndRemoveOldEntity(db, entity, databaseCollection, reassignIds, oldEntity);
             }
+        }
+
+        private void ReassignIdsAndRemoveOldEntity(IGameDatabaseAPI db, bool isNew, TEntity entity,
+            IItemCollection<TEntity> databaseCollection,
+            bool reassignIds, TEntity oldEntity, TDto objectDto)
+        {
+            using (db.BufferedUpdate())
+            {
+                if (isNew)
+                {
+                    Logger.Info($"Saving new object {GetHandledType()} with id {entity.Id}...");
+                    databaseCollection.Add(entity);
+                    FillEntityPostNewEntitySave(entity, objectDto);
+                }
+                else
+                {
+                    Logger.Info($"Saving existing object {GetHandledType()} with id {entity.Id}...");
+                    databaseCollection.Update(entity);
+                }
+
+                DoReassignIdsAndRemoveOldEntity(db, entity, databaseCollection, reassignIds, oldEntity);
+            }
+        }
+
+        private void DoReassignIdsAndRemoveOldEntity(IGameDatabaseAPI db, TEntity entity,
+            IItemCollection<TEntity> databaseCollection,
+            bool reassignIds, TEntity oldEntity)
+        {
+            if (!reassignIds)
+            {
+                return;
+            }
+
+            Logger.Info(
+                $"Going to reassign ids from {oldEntity.Id} to {entity.Id} for object with type {GetHandledType()}...");
+            HandleReassigningIds(oldEntity, entity, db);
+
+            Logger.Trace($"Removing old object {GetHandledType()} with id {oldEntity.Id}...");
+            _dataSynchronizationService.RegisterGracePeriod(GetHandledType(), oldEntity.Id);
+            databaseCollection.Remove(oldEntity);
         }
 
         protected virtual TEntity FindDatabaseObject(IItemCollection<TEntity> databaseCollection, TDto objectDto,

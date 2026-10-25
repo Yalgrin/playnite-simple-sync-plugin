@@ -6,6 +6,7 @@ namespace SimpleSyncPlugin.Threading
     {
         public bool InvalidRegistration { get; set; }
         public string SessionId { get; set; }
+        public string ServerVersion { get; set; }
     }
 
     public class SessionChangedEventArgs : EventArgs

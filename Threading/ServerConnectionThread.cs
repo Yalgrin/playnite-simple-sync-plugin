@@ -19,7 +19,7 @@ namespace SimpleSyncPlugin.Threading
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
 
-        private readonly DataProcessingThread _dataProcessingThread;
+        private readonly DataProcessingBroker _dataProcessingBroker;
         private readonly SyncBackendService _syncBackendService;
         private readonly SimpleSyncPluginSettingsViewModel _settings;
         private readonly IPlayniteAPI _api;
@@ -30,11 +30,11 @@ namespace SimpleSyncPlugin.Threading
         private Task _workerTask;
         private Stream _currentStream;
 
-        public ServerConnectionThread(DataProcessingThread dataProcessingThread,
+        public ServerConnectionThread(DataProcessingBroker dataProcessingBroker,
             SyncBackendService syncBackendService,
             SimpleSyncPluginSettingsViewModel settings, IPlayniteAPI playniteApi)
         {
-            _dataProcessingThread = dataProcessingThread;
+            _dataProcessingBroker = dataProcessingBroker;
             _syncBackendService = syncBackendService;
             _settings = settings;
             _api = playniteApi;
@@ -134,7 +134,8 @@ namespace SimpleSyncPlugin.Threading
                 SessionManager.CurrentSession = new SessionInfo
                 {
                     InvalidRegistration = SessionManager.CurrentSession?.InvalidRegistration ?? false,
-                    SessionId = null
+                    SessionId = null,
+                    ServerVersion = null
                 };
             }
         }
@@ -200,14 +201,15 @@ namespace SimpleSyncPlugin.Threading
                                 SessionManager.CurrentSession = new SessionInfo
                                 {
                                     InvalidRegistration = false,
-                                    SessionId = obj.SessionId
+                                    SessionId = obj.SessionId,
+                                    ServerVersion = obj.ServerVersion
                                 };
                                 break;
                             }
                             case "CHANGE":
                             {
                                 var obj = JsonConvert.DeserializeObject<ChangeMessage>(truncMsg);
-                                _dataProcessingThread.SubmitChange(obj);
+                                _dataProcessingBroker.SubmitChange(obj);
                                 break;
                             }
                         }
@@ -217,7 +219,8 @@ namespace SimpleSyncPlugin.Threading
                 SessionManager.CurrentSession = new SessionInfo
                 {
                     InvalidRegistration = SessionManager.CurrentSession?.InvalidRegistration ?? false,
-                    SessionId = null
+                    SessionId = null,
+                    ServerVersion = null
                 };
                 Logger.Trace("Stream has been terminated...");
             }
@@ -239,24 +242,24 @@ namespace SimpleSyncPlugin.Threading
             {
                 return await syncBackendClient.Connect(_settings.Settings.LastProcessedId, cancellationToken);
             }
-            catch (AuthException ex)
+            catch (SecurityException ex)
             {
                 Logger.Error(ex, "Exception while checking the connection!");
                 await _api.MainView.UIDispatcher.InvokeAsync(() =>
                 {
                     switch (ex.Message)
                     {
-                        case "AuthException.CLIENT_ALREADY_REGISTERED":
+                        case "SecurityException.CLIENT_ALREADY_REGISTERED":
                             _api.Dialogs.ShowErrorMessage(
                                 "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_ClientAlreadyConnected",
                                 "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_PassiveAuthCaption");
                             break;
-                        case "AuthException.MISSING_REGISTRATION":
+                        case "SecurityException.MISSING_REGISTRATION":
                             _api.Dialogs.ShowErrorMessage(
                                 "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_MissingRegistration",
                                 "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_PassiveAuthCaption");
                             break;
-                        case "AuthException.INVALID_CREDENTIALS":
+                        case "SecurityException.INVALID_CREDENTIALS":
                             _api.Dialogs.ShowErrorMessage(
                                 "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_InvalidRegistration",
                                 "LOC_Yalgrin_SimpleSync_Dialogs_TestConnection_PassiveAuthCaption");

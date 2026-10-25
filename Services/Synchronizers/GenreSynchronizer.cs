@@ -4,6 +4,7 @@ using Playnite.SDK;
 using Playnite.SDK.Models;
 using SimpleSyncPlugin.Models;
 using SimpleSyncPlugin.Settings;
+using SimpleSyncPlugin.Threading;
 
 namespace SimpleSyncPlugin.Services.Synchronizers
 {
@@ -14,7 +15,9 @@ namespace SimpleSyncPlugin.Services.Synchronizers
         private readonly SyncBackendService _syncBackendService;
 
         public GenreSynchronizer(IPlayniteAPI api, SimpleSyncPluginSettingsViewModel settingsViewModel,
-            SyncBackendService syncBackendService) : base(api, settingsViewModel)
+            DataProcessingBroker dataProcessingBroker, DataProcessingService dataProcessingService,
+            SyncBackendService syncBackendService) : base(api, settingsViewModel, dataProcessingBroker,
+            dataProcessingService)
         {
             _syncBackendService = syncBackendService;
         }
@@ -24,16 +27,31 @@ namespace SimpleSyncPlugin.Services.Synchronizers
             return db.Genres;
         }
 
-        protected override Task SaveObject(Genre entity, CancellationToken cancellationToken = default)
+        public override async Task SaveObject(object entity, CancellationToken cancellationToken = default)
         {
-            Logger.Trace($"Saving genre with id = {entity.Id}");
-            return _syncBackendService.SaveGenre(entity, cancellationToken);
+            if (!(entity is Genre genre))
+            {
+                return;
+            }
+
+            Logger.Trace($"Saving genre with id = {genre.Id}");
+            var savedObject = await _syncBackendService.SaveGenre(genre, cancellationToken);
+            if (savedObject.Id != genre.Id.ToString())
+            {
+                Logger.Debug($"Genre id mismatch: saved id = {savedObject.Id}, entity id = {genre.Id}");
+                _dataProcessingService.ProcessIdMismatch(GetHandledType(), savedObject);
+            }
         }
 
-        protected override Task DeleteObject(Genre entity, CancellationToken cancellationToken = default)
+        public override Task DeleteObject(object entity, CancellationToken cancellationToken = default)
         {
-            Logger.Trace($"Deleting genre with id = {entity.Id}");
-            return _syncBackendService.DeleteGenre(entity, cancellationToken);
+            if (!(entity is Genre genre))
+            {
+                return Task.CompletedTask;
+            }
+
+            Logger.Trace($"Deleting genre with id = {genre.Id}");
+            return _syncBackendService.DeleteGenre(genre, cancellationToken);
         }
 
         public override ObjectType GetHandledType()

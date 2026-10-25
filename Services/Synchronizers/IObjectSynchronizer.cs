@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Playnite.SDK;
 using SimpleSyncPlugin.Models;
@@ -19,5 +20,13 @@ namespace SimpleSyncPlugin.Services.Synchronizers
         Task SyncSelected(IGameDatabaseAPI db, GlobalProgressActionArgs progArgs, List<Guid> ids);
 
         void RegisterGracePeriod(Guid id);
+
+        Task SaveObject(object entity, CancellationToken cancellationToken = default);
+
+        Task SaveObjectById(Guid id, CancellationToken cancellationToken = default);
+
+        Task SaveDiffObject(object oldEntity, object newEntity, CancellationToken cancellationToken = default);
+
+        Task DeleteObject(object entity, CancellationToken cancellationToken = default);
     }
 }

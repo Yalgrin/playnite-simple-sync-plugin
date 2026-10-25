@@ -24,6 +24,7 @@ namespace SimpleSyncPlugin.Models
     public class InitializationMessage
     {
         [JsonProperty("sessionId")] public string SessionId { get; set; }
+        [JsonProperty("serverVersion")] public string ServerVersion { get; set; }
     }
 
     public class RegistrationRequestDto

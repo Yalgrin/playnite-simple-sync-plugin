@@ -4,6 +4,7 @@ using Playnite.SDK;
 using Playnite.SDK.Models;
 using SimpleSyncPlugin.Models;
 using SimpleSyncPlugin.Settings;
+using SimpleSyncPlugin.Threading;
 
 namespace SimpleSyncPlugin.Services.Synchronizers
 {
@@ -14,7 +15,9 @@ namespace SimpleSyncPlugin.Services.Synchronizers
         private readonly SyncBackendService _syncBackendService;
 
         public RegionSynchronizer(IPlayniteAPI api, SimpleSyncPluginSettingsViewModel settingsViewModel,
-            SyncBackendService syncBackendService) : base(api, settingsViewModel)
+            DataProcessingBroker dataProcessingBroker, DataProcessingService dataProcessingService,
+            SyncBackendService syncBackendService) : base(api, settingsViewModel, dataProcessingBroker,
+            dataProcessingService)
         {
             _syncBackendService = syncBackendService;
         }
@@ -24,16 +27,31 @@ namespace SimpleSyncPlugin.Services.Synchronizers
             return db.Regions;
         }
 
-        protected override Task SaveObject(Region entity, CancellationToken cancellationToken = default)
+        public override async Task SaveObject(object entity, CancellationToken cancellationToken = default)
         {
-            Logger.Trace($"Saving region with id = {entity.Id}");
-            return _syncBackendService.SaveRegion(entity, cancellationToken);
+            if (!(entity is Region region))
+            {
+                return;
+            }
+
+            Logger.Trace($"Saving region with id = {region.Id}");
+            var savedObject = await _syncBackendService.SaveRegion(region, cancellationToken);
+            if (savedObject.Id != region.Id.ToString())
+            {
+                Logger.Debug($"Region id mismatch: saved id = {savedObject.Id}, entity id = {region.Id}");
+                _dataProcessingService.ProcessIdMismatch(GetHandledType(), savedObject);
+            }
         }
 
-        protected override Task DeleteObject(Region entity, CancellationToken cancellationToken = default)
+        public override Task DeleteObject(object entity, CancellationToken cancellationToken = default)
         {
-            Logger.Trace($"Deleting region with id = {entity.Id}");
-            return _syncBackendService.DeleteRegion(entity, cancellationToken);
+            if (!(entity is Region region))
+            {
+                return Task.CompletedTask;
+            }
+
+            Logger.Trace($"Deleting category with id = {region.Id}");
+            return _syncBackendService.DeleteRegion(region, cancellationToken);
         }
 
         public override ObjectType GetHandledType()

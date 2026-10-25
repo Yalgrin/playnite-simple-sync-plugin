@@ -4,6 +4,7 @@ using Playnite.SDK;
 using Playnite.SDK.Models;
 using SimpleSyncPlugin.Models;
 using SimpleSyncPlugin.Settings;
+using SimpleSyncPlugin.Threading;
 
 namespace SimpleSyncPlugin.Services.Synchronizers
 {
@@ -14,7 +15,9 @@ namespace SimpleSyncPlugin.Services.Synchronizers
         private readonly SyncBackendService _syncBackendService;
 
         public FeatureSynchronizer(IPlayniteAPI api, SimpleSyncPluginSettingsViewModel settingsViewModel,
-            SyncBackendService syncBackendService) : base(api, settingsViewModel)
+            DataProcessingBroker dataProcessingBroker, DataProcessingService dataProcessingService,
+            SyncBackendService syncBackendService) : base(api, settingsViewModel, dataProcessingBroker,
+            dataProcessingService)
         {
             _syncBackendService = syncBackendService;
         }
@@ -24,16 +27,31 @@ namespace SimpleSyncPlugin.Services.Synchronizers
             return db.Features;
         }
 
-        protected override Task SaveObject(GameFeature entity, CancellationToken cancellationToken = default)
+        public override async Task SaveObject(object entity, CancellationToken cancellationToken = default)
         {
-            Logger.Trace($"Saving feature with id = {entity.Id}");
-            return _syncBackendService.SaveFeature(entity, cancellationToken);
+            if (!(entity is GameFeature feature))
+            {
+                return;
+            }
+
+            Logger.Trace($"Saving feature with id = {feature.Id}");
+            var savedObject = await _syncBackendService.SaveFeature(feature, cancellationToken);
+            if (savedObject.Id != feature.Id.ToString())
+            {
+                Logger.Debug($"Feature id mismatch: saved id = {savedObject.Id}, entity id = {feature.Id}");
+                _dataProcessingService.ProcessIdMismatch(GetHandledType(), savedObject);
+            }
         }
 
-        protected override Task DeleteObject(GameFeature entity, CancellationToken cancellationToken = default)
+        public override Task DeleteObject(object entity, CancellationToken cancellationToken = default)
         {
-            Logger.Trace($"Deleting feature with id = {entity.Id}");
-            return _syncBackendService.DeleteFeature(entity, cancellationToken);
+            if (!(entity is GameFeature feature))
+            {
+                return Task.CompletedTask;
+            }
+
+            Logger.Trace($"Deleting feature with id = {feature.Id}");
+            return _syncBackendService.DeleteFeature(feature, cancellationToken);
         }
 
         public override ObjectType GetHandledType()

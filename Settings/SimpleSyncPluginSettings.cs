@@ -184,6 +184,18 @@ namespace SimpleSyncPlugin.Settings
                 msg += "⚠️ " + GetLocalizedString("LOC_Yalgrin_SimpleSync_Settings_NoSession");
             }
 
+            msg += "\n";
+
+            if (SessionManager.CurrentSession?.ServerVersion != null)
+            {
+                msg += "✔️ " + string.Format(GetLocalizedString("LOC_Yalgrin_SimpleSync_Settings_ServerVersion"),
+                    SessionManager.CurrentSession.ServerVersion);
+            }
+            else
+            {
+                msg += "⚠️ " + GetLocalizedString("LOC_Yalgrin_SimpleSync_Settings_ServerVersionUnknown");
+            }
+
             StatusMessage = msg;
         }
 
@@ -461,7 +473,8 @@ namespace SimpleSyncPlugin.Settings
                     SessionManager.CurrentSession = new SessionInfo
                     {
                         InvalidRegistration = true,
-                        SessionId = SessionManager.CurrentSession?.SessionId
+                        SessionId = SessionManager.CurrentSession?.SessionId,
+                        ServerVersion = SessionManager.CurrentSession?.ServerVersion
                     };
                 }
 

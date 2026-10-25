@@ -4,6 +4,7 @@ using Playnite.SDK;
 using Playnite.SDK.Models;
 using SimpleSyncPlugin.Models;
 using SimpleSyncPlugin.Settings;
+using SimpleSyncPlugin.Threading;
 
 namespace SimpleSyncPlugin.Services.Synchronizers
 {
@@ -14,7 +15,9 @@ namespace SimpleSyncPlugin.Services.Synchronizers
         private readonly SyncBackendService _syncBackendService;
 
         public PlatformSynchronizer(IPlayniteAPI api, SimpleSyncPluginSettingsViewModel settingsViewModel,
-            SyncBackendService syncBackendService) : base(api, settingsViewModel)
+            DataProcessingBroker dataProcessingBroker, DataProcessingService dataProcessingService,
+            SyncBackendService syncBackendService) : base(api, settingsViewModel, dataProcessingBroker,
+            dataProcessingService)
         {
             _syncBackendService = syncBackendService;
         }
@@ -24,23 +27,55 @@ namespace SimpleSyncPlugin.Services.Synchronizers
             return db.Platforms;
         }
 
-        protected override Task SaveObject(Platform entity, CancellationToken cancellationToken = default)
+        public override async Task SaveObject(object entity, CancellationToken cancellationToken = default)
         {
-            Logger.Trace($"Saving platform with id = {entity.Id}");
-            return _syncBackendService.SavePlatform(entity, cancellationToken);
+            if (!(entity is Platform platform))
+            {
+                return;
+            }
+
+            Logger.Trace($"Saving platform with id = {platform.Id}");
+            var savedObject = await _syncBackendService.SavePlatform(platform, cancellationToken);
+            if (savedObject.Id != platform.Id.ToString())
+            {
+                Logger.Debug($"Platform id mismatch: saved id = {savedObject.Id}, entity id = {platform.Id}");
+                _dataProcessingService.ProcessIdMismatch(GetHandledType(), savedObject);
+            }
         }
 
-        protected override Task SaveDiffObject(Platform oldEntity, Platform newEntity,
+        public override async Task SaveDiffObject(object oldEntity, object newEntity,
             CancellationToken cancellationToken = default)
         {
-            Logger.Trace($"Saving platform diff with id = {newEntity.Id}");
-            return _syncBackendService.SavePlatformDiff(oldEntity, newEntity, cancellationToken);
+            if (!(oldEntity is Platform oldPlatform))
+            {
+                return;
+            }
+
+            if (!(newEntity is Platform newPlatform))
+            {
+                return;
+            }
+
+            Logger.Trace(
+                $"Saving platform diff with id = {newPlatform.Id}");
+            var savedObject = await _syncBackendService.SavePlatformDiff(oldPlatform, newPlatform, cancellationToken);
+            if (savedObject.Id != newPlatform.Id.ToString())
+            {
+                Logger.Debug($"Platform id mismatch: saved id = {savedObject.Id}, entity id = {newPlatform.Id}");
+                _dataProcessingService.ProcessIdMismatch(GetHandledType(), savedObject);
+            }
         }
 
-        protected override Task DeleteObject(Platform entity, CancellationToken cancellationToken = default)
+        public override Task DeleteObject(object entity, CancellationToken cancellationToken = default)
         {
-            Logger.Trace($"Deleting platform with id = {entity.Id}");
-            return _syncBackendService.DeletePlatform(entity, cancellationToken);
+            if (!(entity is Platform platform))
+            {
+                return Task.CompletedTask;
+            }
+
+            Logger.Trace(
+                $"Deleting platform with id = {platform.Id}");
+            return _syncBackendService.DeletePlatform(platform, cancellationToken);
         }
 
         public override ObjectType GetHandledType()

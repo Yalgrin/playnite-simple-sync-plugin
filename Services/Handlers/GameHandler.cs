@@ -168,6 +168,9 @@ namespace SimpleSyncPlugin.Services.Handlers
 
                     entity = oldEntity.GetCopy();
                     entity.Id = new Guid(objectDto.Id);
+                    oldEntity.BackgroundImage = null;
+                    oldEntity.CoverImage = null;
+                    oldEntity.Icon = null;
                     isNew = true;
                 }
             }

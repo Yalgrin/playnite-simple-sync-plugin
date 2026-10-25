@@ -19,15 +19,13 @@ namespace SimpleSyncPlugin.Services
         private readonly SyncBackendService _syncBackendService;
         private List<IObjectSynchronizer> _synchronizerList;
         private Dictionary<ObjectType, IObjectSynchronizer> _objectSynchronizers;
-        private SimpleSyncWorker _simpleSyncWorker;
 
         public DataSynchronizationService(IPlayniteAPI api, SimpleSyncPluginSettingsViewModel settingsViewModel,
-            SyncBackendService syncBackendService, SimpleSyncWorker simpleSyncWorker)
+            SyncBackendService syncBackendService)
         {
             _api = api;
             _settingsViewModel = settingsViewModel;
             _syncBackendService = syncBackendService;
-            _simpleSyncWorker = simpleSyncWorker;
         }
 
         public void Initialize(DataProcessingBroker dataProcessingBroker, DataProcessingService dataProcessingService)
@@ -106,7 +104,7 @@ namespace SimpleSyncPlugin.Services
                         return;
                     }
 
-                    await _simpleSyncWorker.Enqueue(() => synchronizer.SyncAll(db, progArgs));
+                    await synchronizer.SyncAll(db, progArgs);
                 }
 
                 Logger.Info("SyncAll > END");
@@ -128,7 +126,7 @@ namespace SimpleSyncPlugin.Services
                 {
                     progArgs.ProgressMaxValue = ids.Count;
                     progArgs.CurrentProgressValue = 0;
-                    await _simpleSyncWorker.Enqueue(() => gameSynchronizer.SyncSelected(db, progArgs, ids));
+                    await gameSynchronizer.SyncSelected(db, progArgs, ids);
                 }
 
                 Logger.Info("SyncGames > END");

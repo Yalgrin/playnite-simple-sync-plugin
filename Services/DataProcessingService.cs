@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Playnite.SDK;
 using SimpleSyncPlugin.Extensions;
 using SimpleSyncPlugin.Models;
 using SimpleSyncPlugin.Services.Handlers;
 using SimpleSyncPlugin.Settings;
-using SimpleSyncPlugin.Threading;
 
 namespace SimpleSyncPlugin.Services
 {
@@ -18,19 +18,16 @@ namespace SimpleSyncPlugin.Services
         private readonly SimpleSyncPluginSettingsViewModel _settings;
         private readonly SyncBackendService _syncBackendService;
         private readonly DataSynchronizationService _dataSynchronizationService;
-        private readonly SimpleSyncWorker _simpleSyncWorker;
         private readonly List<IChangeHandler> _changeHandlerList;
         private readonly Dictionary<ObjectType, IChangeHandler> _changeHandlers;
 
         public DataProcessingService(IPlayniteAPI api, SimpleSyncPluginSettingsViewModel settings,
-            SyncBackendService syncBackendService, DataSynchronizationService dataSynchronizationService,
-            SimpleSyncWorker simpleSyncWorker)
+            SyncBackendService syncBackendService, DataSynchronizationService dataSynchronizationService)
         {
             _api = api;
             _settings = settings;
             _syncBackendService = syncBackendService;
             _dataSynchronizationService = dataSynchronizationService;
-            _simpleSyncWorker = simpleSyncWorker;
             _changeHandlerList = CreateHandlerList();
             _changeHandlers = CreateHandlers();
         }
@@ -64,7 +61,7 @@ namespace SimpleSyncPlugin.Services
             return _changeHandlerList.ToDictionary(handler => handler.GetHandledType());
         }
 
-        public async Task ProcessChange(ChangeMessage dto)
+        public async Task ProcessChange(ChangeMessage dto, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -73,7 +70,7 @@ namespace SimpleSyncPlugin.Services
                 {
                     Logger.Trace(
                         $"Trying to process change with ID = {dto.Id} of type {dto.Type} and base object id {dto.ObjectId} (force fetch: {dto.ForceFetch})...");
-                    await _simpleSyncWorker.Enqueue(() => handler.HandleChange(dto));
+                    await handler.HandleChange(dto);
                 }
                 else
                 {
@@ -92,7 +89,7 @@ namespace SimpleSyncPlugin.Services
         public async Task FetchAll(GlobalProgressActionArgs progArgs)
         {
             Logger.Info("FetchAll > START");
-            var changeDtos = await _simpleSyncWorker.Enqueue(() => _syncBackendService.FetchAll());
+            var changeDtos = await _syncBackendService.FetchAll(progArgs.CancelToken);
             var changeCount = changeDtos.Count;
             Logger.Info($"FetchAll > found {changeCount} changes");
 
@@ -111,7 +108,7 @@ namespace SimpleSyncPlugin.Services
                 progArgs.Text = GetLocalizedString("LOC_Yalgrin_SimpleSync_Dialogs_Fetch") + "\n" +
                                 (progArgs.CurrentProgressValue + 1) + "/" + changeCount;
 
-                await ProcessChange(changeDto);
+                await ProcessChange(changeDto, progArgs.CancelToken);
                 progArgs.CurrentProgressValue++;
                 if (changeDto.Id != null && (id == null || id < changeDto.Id))
                 {
@@ -127,7 +124,7 @@ namespace SimpleSyncPlugin.Services
         {
             Logger.Info("FetchGames > START");
             var changeDtos =
-                await _simpleSyncWorker.Enqueue(() => _syncBackendService.SyncBackendClient.FetchGames(requestDto));
+                await _syncBackendService.SyncBackendClient.FetchGames(requestDto, progArgs.CancelToken);
             var changeCount = changeDtos.Count;
             Logger.Info($"FetchGames > found {changeCount} changes");
 
@@ -146,7 +143,7 @@ namespace SimpleSyncPlugin.Services
                 progArgs.Text = GetLocalizedString("LOC_Yalgrin_SimpleSync_Dialogs_Fetch") + "\n" +
                                 (progArgs.CurrentProgressValue + 1) + "/" + changeCount;
 
-                await ProcessChange(changeDto);
+                await ProcessChange(changeDto, progArgs.CancelToken);
                 progArgs.CurrentProgressValue++;
                 if (changeDto.Id != null && (id == null || id < changeDto.Id))
                 {
@@ -165,8 +162,8 @@ namespace SimpleSyncPlugin.Services
                 Logger.Info("FetchRemainingChanges > START");
 
                 List<ChangeMessage> changeDtos =
-                    await _simpleSyncWorker.Enqueue(() => _syncBackendService.FetchRemainingChanges(_settings.Settings
-                        .LastProcessedId));
+                    await _syncBackendService.FetchRemainingChanges(_settings.Settings
+                        .LastProcessedId, progArgs.CancelToken);
 
                 Logger.Info($"FetchRemainingChanges > found {changeDtos.Count} changes to process!");
 

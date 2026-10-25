@@ -42,9 +42,9 @@ namespace SimpleSyncPlugin
             Worker = new SimpleSyncWorker();
             RegisterMainViewListener(api);
             SyncBackendService = new SyncBackendService(api, Settings);
-            DataSynchronizationService = new DataSynchronizationService(api, Settings, SyncBackendService, Worker);
+            DataSynchronizationService = new DataSynchronizationService(api, Settings, SyncBackendService);
             DataProcessingService =
-                new DataProcessingService(api, Settings, SyncBackendService, DataSynchronizationService, Worker);
+                new DataProcessingService(api, Settings, SyncBackendService, DataSynchronizationService);
             DataProcessingBroker = new DataProcessingBroker(DataProcessingService, DataSynchronizationService, Worker);
             DataSynchronizationService.Initialize(DataProcessingBroker, DataProcessingService);
             DataSynchronizationService.RegisterListeners();
@@ -66,6 +66,7 @@ namespace SimpleSyncPlugin
                     mainModel.PropertyChanged += (sender, args) =>
                     {
                         GameAdditionAllowed = (bool)allowedProperty.GetValue(mainModel);
+                        Logger.Trace($"GameAdditionAllowed: {GameAdditionAllowed}");
                         if (GameAdditionAllowed)
                         {
                             Worker.Resume();
@@ -205,25 +206,33 @@ namespace SimpleSyncPlugin
         public override IEnumerable<MainMenuItem> GetMainMenuItems(GetMainMenuItemsArgs args)
         {
             yield return AddSyncOption("LOC_Yalgrin_SimpleSync_Menu_SyncAll",
-                progArgs => DataSynchronizationService.SyncAll(progArgs).GetAwaiter().GetResult());
+                progArgs => Worker.Enqueue(() => DataSynchronizationService.SyncAll(progArgs), progArgs.CancelToken)
+                    .GetAwaiter().GetResult());
             yield return AddSyncOption("LOC_Yalgrin_SimpleSync_Menu_SyncFilteredGames",
-                progArgs => DataSynchronizationService.SyncGames(progArgs, GetFilteredGameIds()).GetAwaiter()
+                progArgs => Worker.Enqueue(() => DataSynchronizationService.SyncGames(progArgs, GetFilteredGameIds()),
+                        progArgs.CancelToken).GetAwaiter()
                     .GetResult());
             yield return AddSyncOption("LOC_Yalgrin_SimpleSync_Menu_SyncSelectedGames",
-                progArgs => DataSynchronizationService.SyncGames(progArgs, GetSelectedGameIds()).GetAwaiter()
+                progArgs => Worker.Enqueue(() => DataSynchronizationService.SyncGames(progArgs, GetSelectedGameIds()),
+                        progArgs.CancelToken).GetAwaiter()
                     .GetResult());
             yield return AddSeparator();
             yield return AddFetchOption("LOC_Yalgrin_SimpleSync_Menu_FetchAll",
-                progArgs => DataProcessingService.FetchAll(progArgs).GetAwaiter().GetResult());
+                progArgs => Worker.Enqueue(() => DataProcessingService.FetchAll(progArgs), progArgs.CancelToken)
+                    .GetAwaiter().GetResult());
             yield return AddFetchOption("LOC_Yalgrin_SimpleSync_Menu_FetchFilteredGames",
-                progArgs => DataProcessingService.FetchGames(progArgs, GetFilteredRequestDto()).GetAwaiter()
+                progArgs => Worker.Enqueue(() => DataProcessingService.FetchGames(progArgs, GetFilteredRequestDto()),
+                        progArgs.CancelToken).GetAwaiter()
                     .GetResult());
             yield return AddFetchOption("LOC_Yalgrin_SimpleSync_Menu_FetchSelectedGames",
-                progArgs => DataProcessingService.FetchGames(progArgs, GetSelectedRequestDto()).GetAwaiter()
+                progArgs => Worker.Enqueue(() => DataProcessingService.FetchGames(progArgs, GetSelectedRequestDto()),
+                        progArgs.CancelToken).GetAwaiter()
                     .GetResult());
             yield return AddSeparator();
             yield return AddFetchOption("LOC_Yalgrin_SimpleSync_Menu_FetchRemainingChanges",
-                progArgs => DataProcessingService.FetchRemainingChanges(progArgs).GetAwaiter().GetResult());
+                progArgs => Worker
+                    .Enqueue(() => DataProcessingService.FetchRemainingChanges(progArgs), progArgs.CancelToken)
+                    .GetAwaiter().GetResult());
         }
 
         private List<Guid> GetFilteredGameIds()

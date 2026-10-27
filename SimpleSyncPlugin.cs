@@ -66,7 +66,6 @@ namespace SimpleSyncPlugin
                     mainModel.PropertyChanged += (sender, args) =>
                     {
                         GameAdditionAllowed = (bool)allowedProperty.GetValue(mainModel);
-                        Logger.Trace($"GameAdditionAllowed: {GameAdditionAllowed}");
                         if (GameAdditionAllowed)
                         {
                             Worker.Resume();

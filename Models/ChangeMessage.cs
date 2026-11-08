@@ -46,8 +46,10 @@ namespace SimpleSyncPlugin.Models
         [EnumMember(Value = "GAME")] Game,
 
         [EnumMember(Value = "GAME_DIFF")] GameDiff,
-        [EnumMember(Value = "LIBRARY")] LibraryPlugin,
-        [EnumMember(Value = "LIBRARY_DIFF")] LibraryPluginDiff,
+        [EnumMember(Value = "LIBRARY_PLUGIN")] LibraryPlugin,
+
+        [EnumMember(Value = "LIBRARY_PLUGIN_DIFF")]
+        LibraryPluginDiff,
     }
 
     public static class ObjectTypeExtension

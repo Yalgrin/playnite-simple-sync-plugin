@@ -121,12 +121,15 @@ namespace SimpleSyncPlugin.Threading
                     }
                 }
 
-                Logger.Debug($"Going to delete {entitiesToDelete.Count} entities of type {type}");
-                foreach (var data in entitiesToDelete)
+                if (entitiesToDelete.Count > 0)
                 {
-                    entities.RemoveAll(e => e.Entity.Id == data.Entity.Id);
-                    entityChanges.RemoveAll(e => e.Entity.Id == data.Entity.Id || e.OldEntity.Id == data.Entity.Id);
-                    await _synchronizationService.DeleteObject(type, data.Entity);
+                    Logger.Debug($"Going to delete {entitiesToDelete.Count} entities of type {type}");
+                    foreach (var data in entitiesToDelete)
+                    {
+                        entities.RemoveAll(e => e.Entity.Id == data.Entity.Id);
+                        entityChanges.RemoveAll(e => e.Entity.Id == data.Entity.Id || e.OldEntity.Id == data.Entity.Id);
+                        await _synchronizationService.DeleteObject(type, data.Entity);
+                    }
                 }
 
                 Dictionary<Guid, int> entityCounts = new Dictionary<Guid, int>();
@@ -160,16 +163,22 @@ namespace SimpleSyncPlugin.Threading
 
                 entityChanges.RemoveAll(e => idsToSendCompletely.Contains(e.Entity.Id));
 
-                Logger.Debug($"Going to save completely {idsToSendCompletely.Count} entities of type {type}");
-                foreach (var id in idsToSendCompletely)
+                if (idsToSendCompletely.Count > 0)
                 {
-                    await _synchronizationService.SaveObjectById(type, id);
+                    Logger.Debug($"Going to save completely {idsToSendCompletely.Count} entities of type {type}");
+                    foreach (var id in idsToSendCompletely)
+                    {
+                        await _synchronizationService.SaveObjectById(type, id);
+                    }
                 }
 
-                Logger.Debug($"Going to save {entityChanges.Count} entity changes of type {type}");
-                foreach (var change in entityChanges)
+                if (entityChanges.Count > 0)
                 {
-                    await _synchronizationService.SaveObjectDiff(type, change.OldEntity, change.Entity);
+                    Logger.Debug($"Going to save {entityChanges.Count} entity changes of type {type}");
+                    foreach (var change in entityChanges)
+                    {
+                        await _synchronizationService.SaveObjectDiff(type, change.OldEntity, change.Entity);
+                    }
                 }
             });
         }

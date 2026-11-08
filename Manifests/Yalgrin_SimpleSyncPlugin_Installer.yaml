@@ -38,3 +38,14 @@ Packages:
       - Important! Requires update to Sync Server version 0.3.0 or higher.
       - Fixed - Server connection thread was sometimes being stopped after changing settings.
       - Improvement - Improved cancelling of specific operations.
+  - Version: 0.4.0
+    RequiredApiVersion: 6.11.0
+    ReleaseDate: 2026-11-08
+    PackageUrl: https://github.com/Yalgrin/playnite-simple-sync-plugin/releases/download/0.4.0/Yagrin_SimpleSyncPlugin_0_4_0.pext
+    Changelog:
+      - News! Simple Sync Panel has been released! Check it out!
+      - Important! Requires update to Sync Server version 0.4.0 or higher.
+      - New feature - Library plugin information will now be synced to the server. It's a one way sync and doesn't mean that the actual plugins themselves will be synced. It's just sending the plugin names and related images for the purpose of the Panel application.
+      - New feature - Server version will now be displayed in the plugin settings.
+      - Improvement - Reworked the way the data fetching and sending is performed. It now uses a queue to ensure that the operations are done in order. The queue is halted during a library update or metadata download operation. These changes should minimize problems related to data consistency.
+      - Fixed - Minor bug fixes.
